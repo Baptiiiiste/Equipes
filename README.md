@@ -1,0 +1,1 @@
+Light version of Microsoft Teams for a Network course project.
