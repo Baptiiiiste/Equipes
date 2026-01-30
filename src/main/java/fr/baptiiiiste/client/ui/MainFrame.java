@@ -1,15 +1,17 @@
 package fr.baptiiiiste.client.ui;
 
 import com.formdev.flatlaf.util.SystemInfo;
-import fr.baptiiiiste.client.ui.components.RoomSidebarPanel;
+import fr.baptiiiiste.client.ui.panels.MainContentPanel;
+import fr.baptiiiiste.client.ui.panels.RoomSidebarPanel;
+import fr.baptiiiiste.client.ui.core.SessionManager;
 
 import javax.swing.*;
 import java.awt.*;
 import java.net.URL;
 
-public class MainWindow extends JFrame {
+public class MainFrame extends JFrame {
 
-    public MainWindow() {
+    public MainFrame() {
 
         setTitle("Equipes");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -30,7 +32,21 @@ public class MainWindow extends JFrame {
         }
 
         // Components
-        add(new RoomSidebarPanel(), BorderLayout.WEST);
+        initUi();
+
+    }
+
+    public void initUi() {
+        RoomSidebarPanel sidebar = new RoomSidebarPanel();
+        MainContentPanel content = new MainContentPanel();
+
+        sidebar.setOnRoomSelected(room -> {
+            SessionManager.setSelectedRoom(room);
+            content.updateDisplay();
+        });
+
+        add(sidebar, BorderLayout.WEST);
+        add(content, BorderLayout.CENTER);
     }
 
 }

@@ -15,11 +15,13 @@ public class Room {
     private List<ClientHandler> clientHandlers;
     private String roomName;
     private ClientHandler currentStreamer;
+    private Boolean isInMeeting;
 
     public Room(String roomName) {
         this.roomName = roomName;
         this.clientHandlers = new ArrayList<>();
         this.currentStreamer = null;
+        this.isInMeeting = false;
     }
 
     public void broadcast(Packet packet, ClientHandler sender) {}

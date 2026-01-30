@@ -1,7 +1,7 @@
 package fr.baptiiiiste;
 
 import com.formdev.flatlaf.FlatDarculaLaf;
-import fr.baptiiiiste.client.ui.MainWindow;
+import fr.baptiiiiste.client.ui.MainFrame;
 
 import javax.swing.*;
 
@@ -15,7 +15,7 @@ public class Main {
         }
 
         java.awt.EventQueue.invokeLater(() -> {
-            new MainWindow().setVisible(true);
+            new MainFrame().setVisible(true);
         });
 
     }
