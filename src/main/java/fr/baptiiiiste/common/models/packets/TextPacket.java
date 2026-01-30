@@ -7,12 +7,12 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class SendTextPacket extends Packet {
+public class TextPacket extends Packet {
 
-    String message;
+    private String message;
 
-    public SendTextPacket(long timestamp, String senderId, PacketType type, String message) {
-        super(timestamp, senderId, type);
+    public TextPacket(long timestamp, String senderId, String roomId, String message) {
+        super(timestamp, senderId, roomId, PacketType.TEXT);
         this.message = message;
     }
 

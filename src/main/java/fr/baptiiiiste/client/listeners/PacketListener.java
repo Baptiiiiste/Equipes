@@ -2,44 +2,67 @@ package fr.baptiiiiste.client.listeners;
 
 import fr.baptiiiiste.common.interfaces.PacketHandler;
 import fr.baptiiiiste.common.models.packets.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.ObjectInputStream;
 
 public class PacketListener implements PacketHandler, Runnable {
 
-    @Override
-    public void handle(SendTextPacket p) {
-        // TODO: Display message in chat UI
-    }
+    private static final Logger logger = LoggerFactory.getLogger(PacketListener.class);
 
-    @Override
-    public void handle(JoinRoomPacket packet) {
-        // TODO: Display new user joined message in chat UI
-        // TODO: Display the new user in the user list UI
-    }
+    private ObjectInputStream in;
+    private PacketHandler uiHandler;
+    private boolean running = true;
 
-    @Override
-    public void handle(LeaveRoomPacket packet) {
-        // TODO: Display user left message in chat UI
-        // TODO: Remove the user in the user list UI
-    }
-
-    @Override
-    public void handle(StartScreenSharePacket packet) {
-        // TODO: if current user is streaming, make him stop
-        // TODO: Display streamer's screen in the UI
-    }
-
-    @Override
-    public void handle(StopScreenSharePacket packet) {
-        // TODO: Remove streamer's screen from the UI
-    }
-
-    @Override
-    public void handle(SendScreenSharePacket packet) {
-        // TODO: Update streamer's screen in the UI
+    public PacketListener(ObjectInputStream in, PacketHandler uiHandler) {
+        this.in = in;
+        this.uiHandler = uiHandler;
     }
 
     @Override
     public void run() {
-        // TODO: Continuously listen for incoming packets and handle them
+        try {
+            while (running) {
+                Object obj = in.readObject();
+                if (obj instanceof Packet packet) {
+                    packet.execute(this);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("[run] " + e.getMessage());
+
+        }
+    }
+
+    @Override
+    public void handle(TextPacket packet) {
+        logger.info("[" + packet.getRoomId() + "] " + packet.getSenderId() + ": " + packet.getMessage());
+
+        if (uiHandler != null) {
+            uiHandler.handle(packet);
+        }
+    }
+
+    @Override
+    public void handle(JoinRoomPacket packet) {
+        logger.info("[" + packet.getRoomId() + "] User " + packet.getSenderId() + "joined the room");
+
+        if (uiHandler != null) {
+            uiHandler.handle(packet);
+        }
+    }
+
+    @Override
+    public void handle(LeaveRoomPacket packet) {
+        logger.info("[" + packet.getRoomId() + "] User " + packet.getSenderId() + "left the room");
+
+        if (uiHandler != null) {
+            uiHandler.handle(packet);
+        }
+    }
+
+    public void stop() {
+        running = false;
     }
 }

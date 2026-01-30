@@ -1,55 +1,122 @@
 package fr.baptiiiiste.server.handlers;
 
+import fr.baptiiiiste.client.listeners.PacketListener;
 import fr.baptiiiiste.common.interfaces.PacketHandler;
 import fr.baptiiiiste.common.models.packets.*;
 import fr.baptiiiiste.server.models.Room;
+import fr.baptiiiiste.server.models.Server;
 import lombok.Getter;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.UUID;
 
 @Setter
 @Getter
 public class ClientHandler implements PacketHandler, Runnable {
 
+    private static final Logger logger = LoggerFactory.getLogger(ClientHandler.class);
+
     private Socket socket;
+    private Server server;
     private Room currentRoom;
+    private ObjectOutputStream out;
+    private ObjectInputStream in;
+    private String clientId;
+    private boolean running = true;
 
-    public ClientHandler(Socket socket, Room currentRoom) {
+    public ClientHandler(Socket socket, Server server) {
         this.socket = socket;
-        this.currentRoom = currentRoom;
-    }
-
-    public void run() {}
-    public void sendPacket(Packet packet) {}
-
-    @Override
-    public void handle(JoinRoomPacket packet) {
-        currentRoom.addClient(this);
+        this.server = server;
+        this.clientId = UUID.randomUUID().toString();
     }
 
     @Override
-    public void handle(LeaveRoomPacket packet) {
-        currentRoom.removeClient(this);
+    public void run() {
+        try {
+            this.out = new ObjectOutputStream(socket.getOutputStream());
+            this.in = new ObjectInputStream(socket.getInputStream());
+
+            while (running) {
+                Object obj = in.readObject();
+                if (obj instanceof Packet packet) {
+                    packet.execute(this);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("[run] " + e.getMessage());
+        } finally {
+            closeConnection();
+        }
     }
 
     @Override
-    public void handle(SendTextPacket packet) {
+    public void handle(TextPacket packet) {
+        if (currentRoom == null || !currentRoom.getRoomId().equals(packet.getRoomId())) {
+            logger.error("[handle] Client "+ clientId + " tried to send TEXT to room " + packet.getRoomId() + " but is in room " + (currentRoom != null ? currentRoom.getRoomId() : "none"));
+            return;
+        }
+
+        logger.info("[" + packet.getRoomId() + "] " + clientId + ": " + packet.getMessage());
         currentRoom.broadcast(packet, this);
     }
 
     @Override
-    public void handle(StartScreenSharePacket packet) {
-        currentRoom.tryStartStreaming(this);
+    public void handle(JoinRoomPacket packet) {
+        String roomId = packet.getRoomId();
+
+        if (currentRoom != null) {
+            leaveCurrentRoom();
+        }
+
+        Room room = server.getRoom(roomId);
+        if (room != null) {
+            joinRoom(room);
+            logger.info("[" + packet.getRoomId() + "] " + clientId + " joined the room");
+        } else {
+            logger.error("[handle] Room " + roomId + " does not exist for client " + clientId);
+        }
     }
 
     @Override
-    public void handle(StopScreenSharePacket packet) {
-        currentRoom.stopStreaming(this);
+    public void handle(LeaveRoomPacket packet) {
+        leaveCurrentRoom();
     }
 
-    @Override
-    public void handle(SendScreenSharePacket packet) {
+    public void joinRoom(Room room) {
+        this.currentRoom = room;
+        room.addClient(this);
+    }
 
+    public void leaveCurrentRoom() {
+        if (currentRoom != null) {
+            currentRoom.removeClient(this);
+            this.currentRoom = null;
+        }
+    }
+
+    public void sendPacket(Packet packet) {
+        try {
+            out.writeObject(packet);
+            out.flush();
+        } catch (Exception e) {
+            logger.error("[sendPacket] " + e.getMessage());
+        }
+    }
+
+    private void closeConnection() {
+        running = false;
+        leaveCurrentRoom();
+        try {
+            if (in != null) in.close();
+            if (out != null) out.close();
+            socket.close();
+        } catch (Exception e) {
+            logger.error("[closeConnection] " + e.getMessage());
+        }
     }
 }
