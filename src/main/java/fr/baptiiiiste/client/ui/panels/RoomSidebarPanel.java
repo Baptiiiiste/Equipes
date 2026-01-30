@@ -1,8 +1,8 @@
 package fr.baptiiiiste.client.ui.panels;
 
+import fr.baptiiiiste.client.models.ClientRoom;
 import fr.baptiiiiste.client.ui.listeners.RoomSelectionListener;
-import fr.baptiiiiste.common.config.Config;
-import fr.baptiiiiste.server.models.Room;
+import fr.baptiiiiste.client.ui.core.SessionManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,8 +20,8 @@ public class RoomSidebarPanel extends JPanel {
         setBackground(background);
 
         // Title
-        JLabel titleLabel = new JLabel("Rooms", SwingConstants.CENTER);
-        titleLabel.setOpaque(false); // Le label laisse passer le fond du panel
+        JLabel titleLabel = new JLabel("Salles", SwingConstants.CENTER);
+        titleLabel.setOpaque(false);
         titleLabel.setFont(titleLabel.getFont().deriveFont(20f).deriveFont(Font.BOLD));
         titleLabel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Component.borderColor")),
@@ -29,9 +29,9 @@ public class RoomSidebarPanel extends JPanel {
         ));
 
         // List
-        DefaultListModel<Room> roomsModel = new DefaultListModel<>();
-        roomsModel.addAll(Config.getServer().getRooms());
-        JList<Room> myList = new JList<>(roomsModel);
+        DefaultListModel<ClientRoom> roomsModel = new DefaultListModel<>();
+        roomsModel.addAll(SessionManager.getAvailableRooms());
+        JList<ClientRoom> myList = new JList<>(roomsModel);
         myList.setBackground(background);
         myList.setFocusable(false);
 
@@ -43,7 +43,7 @@ public class RoomSidebarPanel extends JPanel {
 
         // Scrollpane
         JScrollPane scrollPane = new JScrollPane(myList);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 0 , 0, 0));
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
 
@@ -55,5 +55,4 @@ public class RoomSidebarPanel extends JPanel {
     public void setOnRoomSelected(RoomSelectionListener listener) {
         this.listener = listener;
     }
-
 }

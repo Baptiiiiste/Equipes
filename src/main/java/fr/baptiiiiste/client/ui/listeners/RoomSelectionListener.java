@@ -1,7 +1,7 @@
 package fr.baptiiiiste.client.ui.listeners;
 
-import fr.baptiiiiste.server.models.Room;
+import fr.baptiiiiste.client.models.ClientRoom;
 
 public interface RoomSelectionListener {
-    void onRoomSelected(Room room);
+    void onRoomSelected(ClientRoom room);
 }
