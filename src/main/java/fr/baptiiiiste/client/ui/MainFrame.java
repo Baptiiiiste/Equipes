@@ -73,7 +73,6 @@ public class MainFrame extends JFrame {
                     dialog.getPort()
             );
 
-            // Configurer le UI handler pour recevoir les messages
             PacketHandler uiHandler = new PacketHandler() {
                 @Override
                 public void handle(TextPacket packet) {
@@ -87,12 +86,12 @@ public class MainFrame extends JFrame {
 
                 @Override
                 public void handle(JoinRoomPacket packet) {
-                    // Rien pour l'instant
+                    // TODO: Add users to connected users list
                 }
 
                 @Override
                 public void handle(LeaveRoomPacket packet) {
-                    // Rien pour l'instant
+                    // TODO: Remove users from connected users list
                 }
             };
 
@@ -102,8 +101,8 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             JOptionPane.showMessageDialog(
                     this,
-                    "Erreur de connexion: " + e.getMessage(),
-                    "Erreur",
+                    "Login error: " + e.getMessage(),
+                    "Error",
                     JOptionPane.ERROR_MESSAGE
             );
             return false;

@@ -20,7 +20,7 @@ public class RoomSidebarPanel extends JPanel {
         setBackground(background);
 
         // Title
-        JLabel titleLabel = new JLabel("Salles", SwingConstants.CENTER);
+        JLabel titleLabel = new JLabel("Rooms", SwingConstants.CENTER);
         titleLabel.setOpaque(false);
         titleLabel.setFont(titleLabel.getFont().deriveFont(20f).deriveFont(Font.BOLD));
         titleLabel.setBorder(BorderFactory.createCompoundBorder(

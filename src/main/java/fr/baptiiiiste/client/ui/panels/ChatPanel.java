@@ -33,7 +33,7 @@ public class ChatPanel extends JPanel {
         // Input panel
         JPanel inputPanel = new JPanel(new BorderLayout(5, 0));
         messageField = new JTextField();
-        sendButton = new JButton("Envoyer");
+        sendButton = new JButton("Send");
 
         messageField.addActionListener(e -> sendMessage());
         sendButton.addActionListener(e -> sendMessage());
@@ -49,7 +49,6 @@ public class ChatPanel extends JPanel {
     public void setCurrentRoom(ClientRoom room) {
         this.currentRoom = room;
         chatArea.setText("");
-        chatArea.append("=== Bienvenue dans " + room.getRoomName() + " ===\n\n");
     }
 
     private void sendMessage() {
@@ -59,7 +58,7 @@ public class ChatPanel extends JPanel {
             return;
         }
 
-        // Envoyer le message au serveur
+        // Send the message packet to the server
         TextPacket packet = new TextPacket(
                 System.currentTimeMillis(),
                 SessionManager.getUsername(),
@@ -68,7 +67,7 @@ public class ChatPanel extends JPanel {
         );
         SessionManager.getClient().sendPacket(packet);
 
-        // Afficher le message localement
+        // Display the message in the chat area
         appendMessage(SessionManager.getUsername(), message);
 
         messageField.setText("");

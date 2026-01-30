@@ -23,9 +23,9 @@ public class MainContentPanel extends JPanel {
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
 
-        // Panel vide
+        // Empty panel
         JPanel emptyPanel = new JPanel(new BorderLayout());
-        titleLabel = new JLabel("Sélectionnez une salle", SwingConstants.CENTER);
+        titleLabel = new JLabel("Choose a room", SwingConstants.CENTER);
         titleLabel.setFont(titleLabel.getFont().deriveFont(18f));
         emptyPanel.add(titleLabel, BorderLayout.CENTER);
 
@@ -43,7 +43,6 @@ public class MainContentPanel extends JPanel {
         ClientRoom selectedRoom = SessionManager.getSelectedRoom();
 
         if (selectedRoom != null) {
-            // Envoyer le packet JOIN_ROOM au serveur
             JoinRoomPacket joinPacket = new JoinRoomPacket(
                     System.currentTimeMillis(),
                     SessionManager.getUsername(),
@@ -51,7 +50,6 @@ public class MainContentPanel extends JPanel {
             );
             SessionManager.getClient().sendPacket(joinPacket);
 
-            // Afficher le chat
             chatPanel.setCurrentRoom(selectedRoom);
             cardLayout.show(contentPanel, "CHAT");
         } else {
