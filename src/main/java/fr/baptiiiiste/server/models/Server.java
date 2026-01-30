@@ -3,6 +3,7 @@ package fr.baptiiiiste.server.models;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -10,6 +11,10 @@ import java.util.Map;
 public class Server {
 
     private int port;
-    private Map<String, Room> rooms;
+    private List<Room> rooms;
 
+    public Server(int port, List<Room> rooms) {
+        this.port = port;
+        this.rooms = rooms;
+    }
 }

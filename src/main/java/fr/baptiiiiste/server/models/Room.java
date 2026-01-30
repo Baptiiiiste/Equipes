@@ -5,6 +5,7 @@ import fr.baptiiiiste.server.handlers.ClientHandler;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -15,9 +16,10 @@ public class Room {
     private String roomName;
     private ClientHandler currentStreamer;
 
-    public Room(List<ClientHandler> clientHandlers, String roomName) {
-        this.clientHandlers = clientHandlers;
+    public Room(String roomName) {
         this.roomName = roomName;
+        this.clientHandlers = new ArrayList<>();
+        this.currentStreamer = null;
     }
 
     public void broadcast(Packet packet, ClientHandler sender) {}
@@ -42,5 +44,11 @@ public class Room {
         if (currentStreamer == requester) {
             currentStreamer = null;
         }
+    }
+
+
+    @Override
+    public String toString() {
+        return roomName;
     }
 }
