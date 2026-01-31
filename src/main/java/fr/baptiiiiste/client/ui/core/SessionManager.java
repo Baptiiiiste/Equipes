@@ -2,6 +2,7 @@ package fr.baptiiiiste.client.ui.core;
 
 import fr.baptiiiiste.client.models.Client;
 import fr.baptiiiiste.client.models.ClientRoom;
+import fr.baptiiiiste.client.ui.handlers.UIPacketHandler;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -21,6 +22,10 @@ public class SessionManager {
     @Getter
     private static List<ClientRoom> availableRooms = new ArrayList<>();
 
+    @Getter
+    private static UIPacketHandler uiHandler;
+
+
     public static void initialize(String username, String host, int port) throws Exception {
         SessionManager.username = username;
 
@@ -28,7 +33,10 @@ public class SessionManager {
         availableRooms.add(new ClientRoom("room2", "Support Technique"));
         availableRooms.add(new ClientRoom("room3", "Random"));
 
+        uiHandler = new UIPacketHandler();
+
         client = new Client(host, port);
+        client.connect(uiHandler);
     }
 
     public static void setSelectedRoom(ClientRoom room) {

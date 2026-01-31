@@ -72,30 +72,6 @@ public class MainFrame extends JFrame {
                     dialog.getHost(),
                     dialog.getPort()
             );
-
-            PacketHandler uiHandler = new PacketHandler() {
-                @Override
-                public void handle(TextPacket packet) {
-                    if (contentPanel != null) {
-                        contentPanel.getChatPanel().appendMessage(
-                                packet.getSenderId(),
-                                packet.getMessage()
-                        );
-                    }
-                }
-
-                @Override
-                public void handle(JoinRoomPacket packet) {
-                    // TODO: Add users to connected users list
-                }
-
-                @Override
-                public void handle(LeaveRoomPacket packet) {
-                    // TODO: Remove users from connected users list
-                }
-            };
-
-            SessionManager.getClient().connect(uiHandler);
             return true;
 
         } catch (Exception e) {
