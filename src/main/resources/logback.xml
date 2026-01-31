@@ -22,6 +22,5 @@
         <appender-ref ref="FILE"/>
     </root>
 
-    <!-- Logger spécifique pour ton package -->
     <logger name="fr.baptiiiiste" level="DEBUG"/>
 </configuration>

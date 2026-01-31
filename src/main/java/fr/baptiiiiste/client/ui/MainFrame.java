@@ -55,6 +55,9 @@ public class MainFrame extends JFrame {
 
         // Components
         initUi();
+
+        SessionManager.getUiHandler().setContentPanel(contentPanel);
+
         setVisible(true);
     }
 
