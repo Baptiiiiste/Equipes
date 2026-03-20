@@ -1,6 +1,7 @@
 package fr.baptiiiiste.server.models;
 
 import fr.baptiiiiste.server.handlers.ClientHandler;
+import fr.baptiiiiste.server.persistence.RoomRepository;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,30 +24,48 @@ public class Server {
 
     private int port;
     private Map<String, Room> rooms;
+    private RoomRepository roomRepository;
     private ExecutorService threadPool;
     private boolean running;
 
     public Server(int port) {
+        this(port, null);
+    }
+
+    public Server(int port, RoomRepository roomRepository) {
         this.port = port;
         this.rooms = new HashMap<>();
+        this.roomRepository = roomRepository;
         this.threadPool = Executors.newCachedThreadPool();
         this.running = false;
+    }
+
+    public void loadRoomsFromStorage() {
+        if (roomRepository == null) {
+            return;
+        }
+
+        List<Room> persistedRooms = roomRepository.findAllRooms();
+        for (Room room : persistedRooms) {
+            rooms.put(room.getRoomId(), room);
+        }
+        logger.info("[loadRoomsFromStorage] Loaded {} room(s) from storage", persistedRooms.size());
     }
 
     public void start() {
         running = true;
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            logger.info("[start] Server started on port " + port);
+            logger.info("[start] Server started on port {}", port);
 
             while (running) {
                 Socket clientSocket = serverSocket.accept();
-                logger.info("[start] New client connected: " + clientSocket.getInetAddress());
+                logger.info("[start] New client connected: {}", clientSocket.getInetAddress());
 
                 ClientHandler clientHandler = new ClientHandler(clientSocket, this);
                 threadPool.execute(clientHandler);
             }
         } catch (IOException e) {
-            logger.error("[start] " + e.getMessage());
+            logger.error("[start] {}", e.getMessage());
         }
     }
 
@@ -59,7 +79,16 @@ public class Server {
     }
 
     public Room createRoom(String roomId, String roomName) {
+        if (roomExists(roomId)) {
+            return rooms.get(roomId);
+        }
+
         Room room = new Room(roomId, roomName);
+
+        if (roomRepository != null) {
+            roomRepository.saveRoom(room);
+        }
+
         rooms.put(roomId, room);
         return room;
     }

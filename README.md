@@ -7,6 +7,7 @@ Light version of Microsoft Teams for a Network course project.
 - JDK 11\+ installed (check with `java -version`)
 - Maven 3.6\+ installed (check with `mvn -v`)
 - macOS (instructions below)
+- Docker Desktop (for local PostgreSQL)
 - (Optional) IntelliJ IDEA for development and debugging
 
 ## Clone the repository
@@ -24,9 +25,35 @@ Build and create an executable JAR (skip tests if desired):
 
 The artifact is typically in `target/` as `artifactId-version.jar`. Replace with the actual name from your `pom.xml`.
 
+## Start PostgreSQL with Docker
+
+1. Copy the env template:
+
+       cp .env.example .env
+
+2. Start PostgreSQL:
+
+       docker compose up -d postgres
+
+The server reads these variables from your shell when it starts:
+
+- `APP_DB_URL` (default: `jdbc:postgresql://localhost:5432/equipes`)
+- `APP_DB_USER` (default: `equipes`)
+- `APP_DB_PASSWORD` (default: `equipes`)
+- `APP_SERVER_PORT` (default: `8080`)
+
+If these variables are not exported, defaults are used.
+
 ## Run the application
 
-[//]: # (TODO: Define how to run the application \(client and server\) once built.)
+Launch from Maven:
+
+    mvn exec:java
+
+Then choose:
+
+- `1` to start server (Flyway migration runs automatically and rooms are loaded from PostgreSQL)
+- `2` to start client
 
 ## Run from IntelliJ IDEA
 
@@ -53,5 +80,6 @@ Run unit tests:
 
 - Java version error: install the correct JDK and set `JAVA_HOME`.
 - Main class not found: ensure `pom.xml` config for the jar plugin or run with `mvn exec:java -Dexec.mainClass="your.MainClass"`.
+- PostgreSQL connection error: confirm `docker compose ps` shows `equipes-postgres` as healthy and verify `.env` values.
 
 Save this content to `README.md`.

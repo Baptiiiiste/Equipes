@@ -18,7 +18,12 @@ public class MainFrame extends JFrame {
 
     private MainContentPanel contentPanel;
 
+    ///  TODO: Temporary: fast launch
     public MainFrame() {
+        this(null, null, -1);
+    }
+
+    public MainFrame(String autoUsername, String autoHost, int autoPort) {
         setTitle("Equipes");
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -47,8 +52,17 @@ public class MainFrame extends JFrame {
             }
         });
 
+        boolean autoLoginRequested = autoUsername != null && !autoUsername.isBlank();
+
         // Login
-        if (!showLoginDialog()) {
+        if (autoLoginRequested) {
+            String host = (autoHost == null || autoHost.isBlank()) ? "localhost" : autoHost;
+            int port = autoPort > 0 ? autoPort : 8080;
+            if (!initializeSession(autoUsername, host, port)) {
+                System.exit(0);
+                return;
+            }
+        } else if (!showLoginDialog()) {
             System.exit(0);
             return;
         }
@@ -69,12 +83,12 @@ public class MainFrame extends JFrame {
             return false;
         }
 
+        return initializeSession(dialog.getUsername(), dialog.getHost(), dialog.getPort());
+    }
+
+    private boolean initializeSession(String username, String host, int port) {
         try {
-            SessionManager.initialize(
-                    dialog.getUsername(),
-                    dialog.getHost(),
-                    dialog.getPort()
-            );
+            SessionManager.initialize(username, host, port);
             return true;
 
         } catch (Exception e) {

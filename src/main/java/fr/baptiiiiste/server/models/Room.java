@@ -1,5 +1,7 @@
 package fr.baptiiiiste.server.models;
 
+import fr.baptiiiiste.common.models.packets.JoinRoomPacket;
+import fr.baptiiiiste.common.models.packets.LeaveRoomPacket;
 import fr.baptiiiiste.common.models.packets.Packet;
 import fr.baptiiiiste.server.handlers.ClientHandler;
 import lombok.Getter;
@@ -38,11 +40,19 @@ public class Room {
 
     public void addClient(ClientHandler clientHandler) {
         clients.add(clientHandler);
+
+        // Send current room roster to the newly joined client, including self.
+        for (ClientHandler client : clients) {
+            clientHandler.sendPacket(new JoinRoomPacket(System.currentTimeMillis(), client.getClientId(), roomId));
+        }
+
+        this.broadcast(new JoinRoomPacket(System.currentTimeMillis(), clientHandler.getClientId(), roomId), clientHandler);
         logger.info("[" + roomId + "] Client " + clientHandler.getClientId() + " joined the room");
     }
 
     public void removeClient(ClientHandler clientHandler) {
         clients.remove(clientHandler);
+        this.broadcast(new LeaveRoomPacket(System.currentTimeMillis(), clientHandler.getClientId(), roomId), clientHandler);
         logger.info("[" + roomId + "] Client " + clientHandler.getClientId() + " left the room");
     }
 

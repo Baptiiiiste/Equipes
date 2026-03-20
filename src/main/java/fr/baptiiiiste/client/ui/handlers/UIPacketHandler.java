@@ -26,15 +26,23 @@ public class UIPacketHandler implements PacketHandler {
 
     @Override
     public void handle(JoinRoomPacket packet) {
+        if (contentPanel == null) {
+            return;
+        }
+
         SwingUtilities.invokeLater(() -> {
-            // TODO: Add user to connected users list
+            contentPanel.getConnectedUsersSidebarPanel().addUser(packet.getSenderId());
         });
     }
 
     @Override
     public void handle(LeaveRoomPacket packet) {
+        if (contentPanel == null) {
+            return;
+        }
+
         SwingUtilities.invokeLater(() -> {
-            // TODO: Remove user from connected users list
+            contentPanel.getConnectedUsersSidebarPanel().removeUser(packet.getSenderId());
         });
     }
 

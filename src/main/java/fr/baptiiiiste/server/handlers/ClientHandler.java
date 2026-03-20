@@ -1,6 +1,5 @@
 package fr.baptiiiiste.server.handlers;
 
-import fr.baptiiiiste.client.listeners.PacketListener;
 import fr.baptiiiiste.common.interfaces.PacketHandler;
 import fr.baptiiiiste.common.models.packets.*;
 import fr.baptiiiiste.server.models.Room;
@@ -48,7 +47,7 @@ public class ClientHandler implements PacketHandler, Runnable {
                 }
             }
         } catch (Exception e) {
-            logger.error("[run] " + e.getMessage());
+            logger.error("[run] {}", e.getMessage());
         } finally {
             closeConnection();
         }
@@ -57,17 +56,21 @@ public class ClientHandler implements PacketHandler, Runnable {
     @Override
     public void handle(TextPacket packet) {
         if (currentRoom == null || !currentRoom.getRoomId().equals(packet.getRoomId())) {
-            logger.error("[handle] Client "+ clientId + " tried to send TEXT to room " + packet.getRoomId() + " but is in room " + (currentRoom != null ? currentRoom.getRoomId() : "none"));
+            logger.error("[handle] Client {} tried to send TEXT to room {} but is in room {}", clientId, packet.getRoomId(), currentRoom != null ? currentRoom.getRoomId() : "none");
             return;
         }
 
-        logger.info("[" + packet.getRoomId() + "] " + clientId + ": " + packet.getMessage());
+        logger.info("[{}] {}: {}", packet.getRoomId(), clientId, packet.getMessage());
         currentRoom.broadcast(packet, this);
     }
 
     @Override
     public void handle(JoinRoomPacket packet) {
         String roomId = packet.getRoomId();
+
+        if (packet.getSenderId() != null && !packet.getSenderId().isBlank()) {
+            this.clientId = packet.getSenderId();
+        }
 
         if (currentRoom != null) {
             leaveCurrentRoom();
@@ -76,9 +79,9 @@ public class ClientHandler implements PacketHandler, Runnable {
         Room room = server.getRoom(roomId);
         if (room != null) {
             joinRoom(room);
-            logger.info("[" + packet.getRoomId() + "] " + clientId + " joined the room");
+            logger.info("[{}] {} joined the room", packet.getRoomId(), clientId);
         } else {
-            logger.error("[handle] Room " + roomId + " does not exist for client " + clientId);
+            logger.error("[handle] Room {} does not exist for client {}", roomId, clientId);
         }
     }
 
@@ -104,7 +107,7 @@ public class ClientHandler implements PacketHandler, Runnable {
             out.writeObject(packet);
             out.flush();
         } catch (Exception e) {
-            logger.error("[sendPacket] " + e.getMessage());
+            logger.error("[sendPacket] {}", e.getMessage());
         }
     }
 
@@ -116,7 +119,7 @@ public class ClientHandler implements PacketHandler, Runnable {
             if (out != null) out.close();
             socket.close();
         } catch (Exception e) {
-            logger.error("[closeConnection] " + e.getMessage());
+            logger.error("[closeConnection] {}", e.getMessage());
         }
     }
 }
