@@ -3,7 +3,9 @@ package fr.baptiiiiste;
 import com.formdev.flatlaf.FlatDarculaLaf;
 import fr.baptiiiiste.client.ui.MainFrame;
 import fr.baptiiiiste.server.models.Server;
+import fr.baptiiiiste.server.persistence.ChatRepository;
 import fr.baptiiiiste.server.persistence.DatabaseConfig;
+import fr.baptiiiiste.server.persistence.JdbcChatRepository;
 import fr.baptiiiiste.server.persistence.JdbcRoomRepository;
 import fr.baptiiiiste.server.persistence.RoomRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -92,7 +94,8 @@ public class Main {
             databaseConfig.migrate();
 
             RoomRepository roomRepository = new JdbcRoomRepository(databaseConfig);
-            server = new Server(serverPort, roomRepository);
+            ChatRepository chatRepository = new JdbcChatRepository(databaseConfig);
+            server = new Server(serverPort, roomRepository, chatRepository);
             server.loadRoomsFromStorage();
             logger.info("[startServer] PostgreSQL connected");
         } catch (Exception exception) {

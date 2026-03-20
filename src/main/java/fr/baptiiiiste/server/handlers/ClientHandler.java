@@ -2,6 +2,7 @@ package fr.baptiiiiste.server.handlers;
 
 import fr.baptiiiiste.common.interfaces.PacketHandler;
 import fr.baptiiiiste.common.models.packets.*;
+import fr.baptiiiiste.server.models.ChatMessage;
 import fr.baptiiiiste.server.models.Room;
 import fr.baptiiiiste.server.models.Server;
 import lombok.Getter;
@@ -59,6 +60,10 @@ public class ClientHandler implements PacketHandler, Runnable {
             logger.error("[handle] Client {} tried to send TEXT to room {} but is in room {}", clientId, packet.getRoomId(), currentRoom != null ? currentRoom.getRoomId() : "none");
             return;
         }
+        
+        this.currentRoom.getChatRepository().saveMessage(
+                new ChatMessage(packet.getRoomId(), packet.getSenderId(), packet.getMessage(), packet.getTimestamp())
+        );
 
         logger.info("[{}] {}: {}", packet.getRoomId(), clientId, packet.getMessage());
         currentRoom.broadcast(packet, this);

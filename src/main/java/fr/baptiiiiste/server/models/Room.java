@@ -3,7 +3,9 @@ package fr.baptiiiiste.server.models;
 import fr.baptiiiiste.common.models.packets.JoinRoomPacket;
 import fr.baptiiiiste.common.models.packets.LeaveRoomPacket;
 import fr.baptiiiiste.common.models.packets.Packet;
+import fr.baptiiiiste.common.models.packets.TextPacket;
 import fr.baptiiiiste.server.handlers.ClientHandler;
+import fr.baptiiiiste.server.persistence.ChatRepository;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -21,12 +23,18 @@ public class Room {
     private String roomId;
     private String roomName;
     private List<ClientHandler> clients;
+    private ChatRepository chatRepository;
     private boolean isInMeeting;
 
     public Room(String roomId, String roomName) {
+        this(roomId, roomName, null);
+    }
+
+    public Room(String roomId, String roomName, ChatRepository chatRepository) {
         this.roomId = roomId;
         this.roomName = roomName;
         this.clients = new ArrayList<>();
+        this.chatRepository = chatRepository;
         this.isInMeeting = false;
     }
 
@@ -46,14 +54,19 @@ public class Room {
             clientHandler.sendPacket(new JoinRoomPacket(System.currentTimeMillis(), client.getClientId(), roomId));
         }
 
+        // Load previous messages
+        for (ChatMessage chatMessage : this.getChatRepository().findMessagesByRoomId(roomId, 150)) {
+            clientHandler.sendPacket(new TextPacket(System.currentTimeMillis(), chatMessage.getSenderId(), roomId, chatMessage.getMessage()));
+        }
+
         this.broadcast(new JoinRoomPacket(System.currentTimeMillis(), clientHandler.getClientId(), roomId), clientHandler);
-        logger.info("[" + roomId + "] Client " + clientHandler.getClientId() + " joined the room");
+        logger.info("[{}] Client {} joined the room", roomId, clientHandler.getClientId());
     }
 
     public void removeClient(ClientHandler clientHandler) {
         clients.remove(clientHandler);
         this.broadcast(new LeaveRoomPacket(System.currentTimeMillis(), clientHandler.getClientId(), roomId), clientHandler);
-        logger.info("[" + roomId + "] Client " + clientHandler.getClientId() + " left the room");
+        logger.info("[{}] Client {} left the room", roomId, clientHandler.getClientId());
     }
 
     @Override

@@ -1,6 +1,7 @@
 package fr.baptiiiiste.server.models;
 
 import fr.baptiiiiste.server.handlers.ClientHandler;
+import fr.baptiiiiste.server.persistence.ChatRepository;
 import fr.baptiiiiste.server.persistence.RoomRepository;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,17 +26,23 @@ public class Server {
     private int port;
     private Map<String, Room> rooms;
     private RoomRepository roomRepository;
+    private ChatRepository chatRepository;
     private ExecutorService threadPool;
     private boolean running;
 
     public Server(int port) {
-        this(port, null);
+        this(port, null, null);
     }
 
     public Server(int port, RoomRepository roomRepository) {
+        this(port, roomRepository, null);
+    }
+
+    public Server(int port, RoomRepository roomRepository, ChatRepository chatRepository) {
         this.port = port;
         this.rooms = new HashMap<>();
         this.roomRepository = roomRepository;
+        this.chatRepository = chatRepository;
         this.threadPool = Executors.newCachedThreadPool();
         this.running = false;
     }
@@ -47,6 +54,7 @@ public class Server {
 
         List<Room> persistedRooms = roomRepository.findAllRooms();
         for (Room room : persistedRooms) {
+            room.setChatRepository(chatRepository);
             rooms.put(room.getRoomId(), room);
         }
         logger.info("[loadRoomsFromStorage] Loaded {} room(s) from storage", persistedRooms.size());
@@ -83,7 +91,7 @@ public class Server {
             return rooms.get(roomId);
         }
 
-        Room room = new Room(roomId, roomName);
+        Room room = new Room(roomId, roomName, chatRepository);
 
         if (roomRepository != null) {
             roomRepository.saveRoom(room);
