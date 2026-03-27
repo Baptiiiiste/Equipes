@@ -1,5 +1,6 @@
 package fr.baptiiiiste.client.ui.handlers;
 
+import fr.baptiiiiste.client.ui.core.SessionManager;
 import fr.baptiiiiste.client.ui.panels.MainContentPanel;
 import fr.baptiiiiste.common.interfaces.PacketHandler;
 import fr.baptiiiiste.common.models.packets.*;
@@ -87,6 +88,42 @@ public class UIPacketHandler implements PacketHandler {
 
         SwingUtilities.invokeLater(() -> {
             contentPanel.onMeetingStopped(packet.getRoomId());
+        });
+    }
+
+    @Override
+    public void handle(AudioUdpOfferPacket packet) {
+        if (SessionManager.getAudioCallManager() == null) {
+            return;
+        }
+
+        SessionManager.getAudioCallManager().handleOffer(packet);
+    }
+
+    @Override
+    public void handle(AudioUdpAcceptPacket packet) {
+        // TODO: see if we display sth
+    }
+
+    @Override
+    public void handle(AudioStartPacket packet) {
+        if (contentPanel == null) {
+            return;
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            contentPanel.onMeetingAudioStarted(packet.getRoomId(), packet.getSenderId());
+        });
+    }
+
+    @Override
+    public void handle(AudioStopPacket packet) {
+        if (contentPanel == null) {
+            return;
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            contentPanel.onMeetingAudioStopped(packet.getRoomId(), packet.getSenderId());
         });
     }
 

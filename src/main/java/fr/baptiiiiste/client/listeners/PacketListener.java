@@ -98,6 +98,42 @@ public class PacketListener implements PacketHandler, Runnable {
         }
     }
 
+    @Override
+    public void handle(AudioUdpOfferPacket packet) {
+        logger.info("[{}] Received audio UDP offer on port {}", packet.getRoomId(), packet.getUdpPort());
+
+        if (uiHandler != null) {
+            uiHandler.handle(packet);
+        }
+    }
+
+    @Override
+    public void handle(AudioUdpAcceptPacket packet) {
+        logger.info("[{}] Received audio UDP accept from {}", packet.getRoomId(), packet.getSenderId());
+
+        if (uiHandler != null) {
+            uiHandler.handle(packet);
+        }
+    }
+
+    @Override
+    public void handle(AudioStartPacket packet) {
+        logger.info("[{}] Audio stream started by {}", packet.getRoomId(), packet.getSenderId());
+
+        if (uiHandler != null) {
+            uiHandler.handle(packet);
+        }
+    }
+
+    @Override
+    public void handle(AudioStopPacket packet) {
+        logger.info("[{}] Audio stream stopped by {}", packet.getRoomId(), packet.getSenderId());
+
+        if (uiHandler != null) {
+            uiHandler.handle(packet);
+        }
+    }
+
     public void stop() {
         running = false;
     }

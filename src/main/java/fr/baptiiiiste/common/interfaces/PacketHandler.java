@@ -10,4 +10,8 @@ public interface PacketHandler {
     void handle(LeaveMeetingPacket packet);
     void handle(MeetingStartPacket packet);
     void handle(MeetingStopPacket packet);
+    void handle(AudioUdpOfferPacket packet);
+    void handle(AudioUdpAcceptPacket packet);
+    void handle(AudioStartPacket packet);
+    void handle(AudioStopPacket packet);
 }

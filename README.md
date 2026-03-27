@@ -41,6 +41,7 @@ The server reads these variables from your shell when it starts:
 - `APP_DB_USER` (default: `equipes`)
 - `APP_DB_PASSWORD` (default: `equipes`)
 - `APP_SERVER_PORT` (default: `8080`)
+- `APP_AUDIO_UDP_PORT` (default: `APP_SERVER_PORT + 1`, so `8081`)
 
 If these variables are not exported, defaults are used.
 
@@ -54,6 +55,13 @@ Then choose:
 
 - `1` to start server (Flyway migration runs automatically and rooms are loaded from PostgreSQL)
 - `2` to start client
+
+## Live audio over UDP
+
+- Audio conversations run inside meetings.
+- Signaling (join/leave/start/stop audio) uses the existing TCP packet layer.
+- Audio frames are sent in real time over UDP and relayed by the server to meeting participants in the same room.
+- To change the relay port, export `APP_AUDIO_UDP_PORT` before starting the server.
 
 ## Run from IntelliJ IDEA
 

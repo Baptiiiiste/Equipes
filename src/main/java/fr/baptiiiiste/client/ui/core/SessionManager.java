@@ -1,5 +1,6 @@
 package fr.baptiiiiste.client.ui.core;
 
+import fr.baptiiiiste.client.audio.AudioCallManager;
 import fr.baptiiiiste.client.models.Client;
 import fr.baptiiiiste.client.models.ClientRoom;
 import fr.baptiiiiste.client.ui.handlers.UIPacketHandler;
@@ -25,9 +26,13 @@ public class SessionManager {
     @Getter
     private static UIPacketHandler uiHandler;
 
+    @Getter
+    private static AudioCallManager audioCallManager;
+
 
     public static void initialize(String username, String host, int port) throws Exception {
         SessionManager.username = username;
+        availableRooms.clear();
 
         availableRooms.add(new ClientRoom("room1", "Général"));
         availableRooms.add(new ClientRoom("room2", "Support Technique"));
@@ -37,6 +42,7 @@ public class SessionManager {
 
         client = new Client(host, port);
         client.connect(uiHandler);
+        audioCallManager = new AudioCallManager(client, username);
     }
 
     public static void setSelectedRoom(ClientRoom room) {
@@ -44,6 +50,9 @@ public class SessionManager {
     }
 
     public static void disconnect() {
+        if (audioCallManager != null) {
+            audioCallManager.shutdown();
+        }
         if (client != null) {
             client.disconnect();
         }

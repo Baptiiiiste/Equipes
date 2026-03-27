@@ -29,6 +29,7 @@ public class MainContentPanel extends JPanel {
     private final Set<String> roomsWithActiveMeeting = new HashSet<>();
     private final Set<String> roomsWhereCurrentUserIsInMeeting = new HashSet<>();
     private final Map<String, Set<String>> meetingParticipantsByRoom = new HashMap<>();
+    private final Map<String, Set<String>> usersStreamingAudioByRoom = new HashMap<>();
 
     private final CardLayout centerCardLayout;
     private final JPanel centerPanel;
@@ -111,9 +112,13 @@ public class MainContentPanel extends JPanel {
             return;
         }
 
+        if (SessionManager.getAudioCallManager() != null) {
+            SessionManager.getAudioCallManager().stopCall(roomId, false);
+        }
         roomsWithActiveMeeting.remove(roomId);
         roomsWhereCurrentUserIsInMeeting.remove(roomId);
         meetingParticipantsByRoom.remove(roomId);
+        usersStreamingAudioByRoom.remove(roomId);
         applyRoomLayoutIfSelected(roomId);
     }
 
@@ -142,14 +147,42 @@ public class MainContentPanel extends JPanel {
         participants.remove(userId);
 
         if (SessionManager.getUsername() != null && SessionManager.getUsername().equals(userId)) {
+            if (SessionManager.getAudioCallManager() != null) {
+                SessionManager.getAudioCallManager().stopCall(roomId, false);
+            }
             roomsWhereCurrentUserIsInMeeting.remove(roomId);
         }
 
         if (participants.isEmpty()) {
             roomsWithActiveMeeting.remove(roomId);
+            usersStreamingAudioByRoom.remove(roomId);
         }
 
         applyRoomLayoutIfSelected(roomId);
+    }
+
+    public void onMeetingAudioStarted(String roomId, String userId) {
+        if (roomId == null || roomId.isBlank() || userId == null || userId.isBlank()) {
+            return;
+        }
+
+        usersStreamingAudioByRoom.computeIfAbsent(roomId, ignored -> new HashSet<>()).add(userId);
+    }
+
+    public void onMeetingAudioStopped(String roomId, String userId) {
+        if (roomId == null || roomId.isBlank() || userId == null || userId.isBlank()) {
+            return;
+        }
+
+        Set<String> usersStreaming = usersStreamingAudioByRoom.get(roomId);
+        if (usersStreaming == null) {
+            return;
+        }
+
+        usersStreaming.remove(userId);
+        if (usersStreaming.isEmpty()) {
+            usersStreamingAudioByRoom.remove(roomId);
+        }
     }
 
     private void applyRoomLayoutIfSelected(String roomId) {
@@ -274,6 +307,10 @@ public class MainContentPanel extends JPanel {
         String username = SessionManager.getUsername();
         if (username != null && !username.isBlank()) {
             onMeetingParticipantLeft(roomId, username);
+        }
+
+        if (SessionManager.getAudioCallManager() != null) {
+            SessionManager.getAudioCallManager().stopCall(roomId, true);
         }
 
         SessionManager.getClient().sendPacket(new LeaveMeetingPacket(

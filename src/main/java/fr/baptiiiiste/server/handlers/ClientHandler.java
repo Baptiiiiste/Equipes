@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.List;
 import java.util.UUID;
 
 @Setter
@@ -115,6 +116,15 @@ public class ClientHandler implements PacketHandler, Runnable {
         sendPacket(new JoinMeetingPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()));
         currentRoom.broadcast(new JoinMeetingPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()), this);
 
+        var audioSession = server.getAudioSessionRegistry().registerParticipant(currentRoom.getRoomId(), clientId);
+        sendPacket(new AudioUdpOfferPacket(
+                System.currentTimeMillis(),
+                "server",
+                currentRoom.getRoomId(),
+                server.getAudioUdpPort(),
+                audioSession.getToken()
+        ));
+
         if (firstInMeeting) {
             currentRoom.broadcast(new MeetingStartPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()), null);
             sendPacket(new MeetingStartPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()));
@@ -139,14 +149,63 @@ public class ClientHandler implements PacketHandler, Runnable {
 
     @Override
     public void handle(MeetingStartPacket packet) {
+        if (!isClientInPacketRoom(packet.getRoomId())) {
+            return;
+        }
+
         sendPacket(packet);
-        this.currentRoom.broadcast(packet, this);
+        currentRoom.broadcast(packet, this);
     }
 
     @Override
     public void handle(MeetingStopPacket packet) {
+        if (!isClientInPacketRoom(packet.getRoomId())) {
+            return;
+        }
+
         sendPacket(packet);
-        this.currentRoom.broadcast(packet, this);
+        currentRoom.broadcast(packet, this);
+    }
+
+    @Override
+    public void handle(AudioUdpOfferPacket packet) {
+        logger.warn("[handle] Client {} sent unexpected AudioUdpOfferPacket", clientId);
+    }
+
+    @Override
+    public void handle(AudioUdpAcceptPacket packet) {
+        if (!isClientInPacketRoom(packet.getRoomId())) {
+            return;
+        }
+
+        if (packet.getSessionToken() == null || packet.getSessionToken().isBlank()) {
+            logger.warn("[handle] AudioUdpAccept rejected for client {}: missing token", clientId);
+            return;
+        }
+
+        if (packet.getUdpPort() < 1 || packet.getUdpPort() > 65535) {
+            logger.warn("[handle] AudioUdpAccept rejected for client {}: invalid udp port {}", clientId, packet.getUdpPort());
+        }
+    }
+
+    @Override
+    public void handle(AudioStartPacket packet) {
+        if (!isClientInPacketRoom(packet.getRoomId()) || !isClientInMeeting(packet.getRoomId())) {
+            return;
+        }
+
+        sendPacket(packet);
+        currentRoom.broadcast(packet, this);
+    }
+
+    @Override
+    public void handle(AudioStopPacket packet) {
+        if (!isClientInPacketRoom(packet.getRoomId()) || !isClientInMeeting(packet.getRoomId())) {
+            return;
+        }
+
+        sendPacket(packet);
+        currentRoom.broadcast(packet, this);
     }
 
     public void joinRoom(Room room) {
@@ -156,6 +215,7 @@ public class ClientHandler implements PacketHandler, Runnable {
 
     public void leaveCurrentRoom() {
         if (currentRoom != null) {
+            leaveMeetingInRoom(currentRoom);
             currentRoom.removeClient(this);
             this.currentRoom = null;
         }
@@ -197,6 +257,12 @@ public class ClientHandler implements PacketHandler, Runnable {
             return;
         }
 
+        server.getAudioSessionRegistry().removeParticipant(room.getRoomId(), clientId);
+
+        AudioStopPacket audioStopPacket = new AudioStopPacket(System.currentTimeMillis(), clientId, room.getRoomId());
+        sendPacket(audioStopPacket);
+        room.broadcast(audioStopPacket, this);
+
         LeaveMeetingPacket leavePacket = new LeaveMeetingPacket(System.currentTimeMillis(), clientId, room.getRoomId());
         sendPacket(leavePacket);
         room.broadcast(leavePacket, this);
@@ -206,5 +272,19 @@ public class ClientHandler implements PacketHandler, Runnable {
             room.broadcast(stopPacket, null);
             sendPacket(stopPacket);
         }
+    }
+
+    private boolean isClientInPacketRoom(String roomId) {
+        return currentRoom != null && currentRoom.getRoomId().equals(roomId);
+    }
+
+    private boolean isClientInMeeting(String roomId) {
+        Room room = server.getRoom(roomId);
+        if (room == null) {
+            return false;
+        }
+
+        List<ClientHandler> participants = room.getClientsInMeeting();
+        return participants.contains(this);
     }
 }
