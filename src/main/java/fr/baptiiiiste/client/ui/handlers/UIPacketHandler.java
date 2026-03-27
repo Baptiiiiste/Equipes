@@ -46,4 +46,48 @@ public class UIPacketHandler implements PacketHandler {
         });
     }
 
+    @Override
+    public void handle(JoinMeetingPacket packet) {
+        if (contentPanel == null) {
+            return;
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            contentPanel.onMeetingParticipantJoined(packet.getRoomId(), packet.getSenderId());
+        });
+    }
+
+    @Override
+    public void handle(LeaveMeetingPacket packet) {
+        if (contentPanel == null) {
+            return;
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            contentPanel.onMeetingParticipantLeft(packet.getRoomId(), packet.getSenderId());
+        });
+    }
+
+    @Override
+    public void handle(MeetingStartPacket packet) {
+        if (contentPanel == null) {
+            return;
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            contentPanel.onMeetingStarted(packet.getRoomId());
+        });
+    }
+
+    @Override
+    public void handle(MeetingStopPacket packet) {
+        if (contentPanel == null) {
+            return;
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            contentPanel.onMeetingStopped(packet.getRoomId());
+        });
+    }
+
 }

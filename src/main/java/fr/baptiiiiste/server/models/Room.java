@@ -1,9 +1,6 @@
 package fr.baptiiiiste.server.models;
 
-import fr.baptiiiiste.common.models.packets.JoinRoomPacket;
-import fr.baptiiiiste.common.models.packets.LeaveRoomPacket;
-import fr.baptiiiiste.common.models.packets.Packet;
-import fr.baptiiiiste.common.models.packets.TextPacket;
+import fr.baptiiiiste.common.models.packets.*;
 import fr.baptiiiiste.server.handlers.ClientHandler;
 import fr.baptiiiiste.server.persistence.ChatRepository;
 import lombok.Getter;
@@ -24,7 +21,7 @@ public class Room {
     private String roomName;
     private List<ClientHandler> clients;
     private ChatRepository chatRepository;
-    private boolean isInMeeting;
+    private List<ClientHandler> clientsInMeeting;
 
     public Room(String roomId, String roomName) {
         this(roomId, roomName, null);
@@ -34,8 +31,8 @@ public class Room {
         this.roomId = roomId;
         this.roomName = roomName;
         this.clients = new ArrayList<>();
+        this.clientsInMeeting = new ArrayList<>();
         this.chatRepository = chatRepository;
-        this.isInMeeting = false;
     }
 
     public void broadcast(Packet packet, ClientHandler sender) {
@@ -57,6 +54,14 @@ public class Room {
         // Load previous messages
         for (ChatMessage chatMessage : this.getChatRepository().findMessagesByRoomId(roomId, 150)) {
             clientHandler.sendPacket(new TextPacket(System.currentTimeMillis(), chatMessage.getSenderId(), roomId, chatMessage.getMessage()));
+        }
+
+        // Send users in the meeting to the new client
+        if (!clientsInMeeting.isEmpty()) {
+            clientHandler.sendPacket(new MeetingStartPacket(System.currentTimeMillis(), clientHandler.getClientId(), roomId));
+            for (ClientHandler client : clientsInMeeting) {
+                clientHandler.sendPacket(new JoinMeetingPacket(System.currentTimeMillis(), client.getClientId(), roomId));
+            }
         }
 
         this.broadcast(new JoinRoomPacket(System.currentTimeMillis(), clientHandler.getClientId(), roomId), clientHandler);

@@ -62,6 +62,42 @@ public class PacketListener implements PacketHandler, Runnable {
         }
     }
 
+    @Override
+    public void handle(JoinMeetingPacket packet) {
+        logger.info("[" + packet.getRoomId() + "] User " + packet.getSenderId() + "joined the meeting");
+
+        if (uiHandler != null) {
+            uiHandler.handle(packet);
+        }
+    }
+
+    @Override
+    public void handle(LeaveMeetingPacket packet) {
+        logger.info("[" + packet.getRoomId() + "] User " + packet.getSenderId() + "left the meeting");
+
+        if (uiHandler != null) {
+            uiHandler.handle(packet);
+        }
+    }
+
+    @Override
+    public void handle(MeetingStartPacket packet) {
+        logger.info("[" + packet.getRoomId() + "] Meeting started by " + packet.getSenderId());
+
+        if (uiHandler != null) {
+            uiHandler.handle(packet);
+        }
+    }
+
+    @Override
+    public void handle(MeetingStopPacket packet) {
+        logger.info("[" + packet.getRoomId() + "] Meeting stopped by " + packet.getSenderId());
+
+        if (uiHandler != null) {
+            uiHandler.handle(packet);
+        }
+    }
+
     public void stop() {
         running = false;
     }

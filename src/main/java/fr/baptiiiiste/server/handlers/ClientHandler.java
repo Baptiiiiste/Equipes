@@ -95,6 +95,63 @@ public class ClientHandler implements PacketHandler, Runnable {
         leaveCurrentRoom();
     }
 
+    @Override
+    public void handle(JoinMeetingPacket packet) {
+        if (currentRoom == null || !currentRoom.getRoomId().equals(packet.getRoomId())) {
+            logger.warn("[handle] JoinMeeting ignored: client {} not in room {}", clientId, packet.getRoomId());
+            return;
+        }
+
+        if (currentRoom.getClientsInMeeting().contains(this)) {
+            return;
+        }
+
+        boolean firstInMeeting = currentRoom.getClientsInMeeting().isEmpty();
+        currentRoom.getClientsInMeeting().add(this);
+
+        sendPacket(new JoinMeetingPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()));
+        currentRoom.broadcast(new JoinMeetingPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()), this);
+
+        if (firstInMeeting) {
+            currentRoom.broadcast(new MeetingStartPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()), null);
+            sendPacket(new MeetingStartPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()));
+        }
+    }
+
+
+    @Override
+    public void handle(LeaveMeetingPacket packet) {
+        if (currentRoom == null || !currentRoom.getRoomId().equals(packet.getRoomId())) {
+            logger.warn("[handle] LeaveMeeting ignored: client {} not in room {}", clientId, packet.getRoomId());
+            return;
+        }
+
+        if (!currentRoom.getClientsInMeeting().contains(this)) {
+            return;
+        }
+
+        currentRoom.getClientsInMeeting().remove(this);
+        sendPacket(new LeaveMeetingPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()));
+        currentRoom.broadcast(new LeaveMeetingPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()), this);
+
+        if (currentRoom.getClientsInMeeting().isEmpty()) {
+            currentRoom.broadcast(new MeetingStopPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()), null);
+            sendPacket(new MeetingStopPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()));
+        }
+    }
+
+    @Override
+    public void handle(MeetingStartPacket packet) {
+        sendPacket(packet);
+        this.currentRoom.broadcast(packet, this);
+    }
+
+    @Override
+    public void handle(MeetingStopPacket packet) {
+        sendPacket(packet);
+        this.currentRoom.broadcast(packet, this);
+    }
+
     public void joinRoom(Room room) {
         this.currentRoom = room;
         room.addClient(this);
