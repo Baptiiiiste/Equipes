@@ -175,6 +175,7 @@ public class MainContentPanel extends JPanel {
 
     private void setNoRoomLayout() {
         meetingControlsPanel.setRoomSelected(false);
+        chatPanel.setMeetingStyle(false);
         chatCenterPanel.remove(meetingControlsPanel);
         meetingCenterPanel.removeAll();
         centerCardLayout.show(centerPanel, CENTER_EMPTY);
@@ -184,6 +185,7 @@ public class MainContentPanel extends JPanel {
 
     private void setChatWithUsersLayout() {
         meetingControlsPanel.setRoomSelected(true);
+        chatPanel.setMeetingStyle(false);
         chatCenterPanel.removeAll();
         chatCenterPanel.add(meetingControlsPanel, BorderLayout.NORTH);
         chatCenterPanel.add(chatPanel, BorderLayout.CENTER);
@@ -196,25 +198,35 @@ public class MainContentPanel extends JPanel {
 
     private void setMeetingLayout() {
         meetingControlsPanel.setRoomSelected(true);
+        chatPanel.setMeetingStyle(true);
         meetingCenterPanel.removeAll();
-        meetingCenterPanel.setLayout(new GridBagLayout());
+        meetingCenterPanel.setLayout(new BorderLayout());
 
         JPanel controlsBand = new JPanel(new BorderLayout());
+        controlsBand.setBorder(BorderFactory.createEmptyBorder(24, 24, 12, 24));
         controlsBand.add(meetingControlsPanel, BorderLayout.CENTER);
+        meetingCenterPanel.add(controlsBand, BorderLayout.NORTH);
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        gbc.insets = new Insets(24, 24, 24, 24);
-        gbc.anchor = GridBagConstraints.NORTH;
-        meetingCenterPanel.add(controlsBand, gbc);
+        JPanel screenShareContainer = new JPanel(new GridBagLayout());
+        screenShareContainer.setBorder(BorderFactory.createEmptyBorder(12, 24, 24, 24));
+
+        JPanel screenSharePlaceholder = new JPanel();
+        screenSharePlaceholder.setPreferredSize(new Dimension(640, 360));
+        screenSharePlaceholder.setBorder(BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor"), 2));
+        screenSharePlaceholder.setOpaque(false);
+
+        screenShareContainer.add(screenSharePlaceholder);
+        meetingCenterPanel.add(screenShareContainer, BorderLayout.CENTER);
 
         centerCardLayout.show(centerPanel, CENTER_MEETING_EMPTY);
 
+        JPanel meetingRightPanel = new JPanel(new GridLayout(2, 1, 0, 0));
+        meetingRightPanel.setPreferredSize(new Dimension(250, 0));
+        meetingRightPanel.add(connectedUsersSidebarPanel);
+        meetingRightPanel.add(chatPanel);
+
         rightPanel.removeAll();
-        rightPanel.add(connectedUsersSidebarPanel, BorderLayout.CENTER);
+        rightPanel.add(meetingRightPanel, BorderLayout.CENTER);
         rightPanel.setVisible(true);
     }
 

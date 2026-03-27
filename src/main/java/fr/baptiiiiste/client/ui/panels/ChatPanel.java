@@ -9,9 +9,12 @@ import java.awt.*;
 
 public class ChatPanel extends JPanel {
 
-    private JTextArea chatArea;
-    private JTextField messageField;
-    private JButton sendButton;
+    private final JTextArea chatArea;
+    private final JTextField messageField;
+    private final JButton sendButton;
+    private final JLabel headerLabel;
+    private final JScrollPane scrollPane;
+    private final JPanel inputPanel;
     private ClientRoom currentRoom;
 
     public ChatPanel() {
@@ -19,19 +22,17 @@ public class ChatPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // Header
-        JLabel headerLabel = new JLabel("Chat");
-        headerLabel.setFont(headerLabel.getFont().deriveFont(18f).deriveFont(Font.BOLD));
-        headerLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        headerLabel = new JLabel("Chat");
 
         // Chat area
         chatArea = new JTextArea();
         chatArea.setEditable(false);
         chatArea.setLineWrap(true);
         chatArea.setWrapStyleWord(true);
-        JScrollPane scrollPane = new JScrollPane(chatArea);
+        scrollPane = new JScrollPane(chatArea);
 
         // Input panel
-        JPanel inputPanel = new JPanel(new BorderLayout(5, 0));
+        inputPanel = new JPanel(new BorderLayout(5, 0));
         messageField = new JTextField();
         sendButton = new JButton("Send");
 
@@ -44,6 +45,8 @@ public class ChatPanel extends JPanel {
         add(headerLabel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
         add(inputPanel, BorderLayout.SOUTH);
+
+        setMeetingStyle(false);
     }
 
     public void setCurrentRoom(ClientRoom room) {
@@ -78,5 +81,46 @@ public class ChatPanel extends JPanel {
             chatArea.append(sender + ": " + message + "\n");
             chatArea.setCaretPosition(chatArea.getDocument().getLength());
         });
+    }
+
+    public void setMeetingStyle(boolean meetingStyle) {
+        if (meetingStyle) {
+            Color background = UIManager.getColor("ScrollBar.track");
+            Color borderColor = UIManager.getColor("Component.borderColor");
+
+            setBorder(BorderFactory.createEmptyBorder());
+            setBackground(background);
+
+            headerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            headerLabel.setOpaque(false);
+            headerLabel.setFont(headerLabel.getFont().deriveFont(20f).deriveFont(Font.BOLD));
+            headerLabel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(2, 0, 1, 0, borderColor),
+                    BorderFactory.createEmptyBorder(15, 0, 15, 0)
+            ));
+
+            chatArea.setBackground(background);
+            scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+            scrollPane.setOpaque(false);
+            scrollPane.getViewport().setOpaque(false);
+            inputPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
+            inputPanel.setOpaque(false);
+            return;
+        }
+
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBackground(UIManager.getColor("Panel.background"));
+
+        headerLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        headerLabel.setOpaque(false);
+        headerLabel.setFont(headerLabel.getFont().deriveFont(18f).deriveFont(Font.BOLD));
+        headerLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+
+        chatArea.setBackground(UIManager.getColor("TextArea.background"));
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setOpaque(true);
+        scrollPane.getViewport().setOpaque(true);
+        inputPanel.setBorder(BorderFactory.createEmptyBorder());
+        inputPanel.setOpaque(true);
     }
 }
