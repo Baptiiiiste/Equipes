@@ -215,7 +215,6 @@ public class ClientHandler implements PacketHandler, Runnable {
 
     public void leaveCurrentRoom() {
         if (currentRoom != null) {
-            leaveMeetingInRoom(currentRoom);
             currentRoom.removeClient(this);
             this.currentRoom = null;
         }
