@@ -70,6 +70,7 @@ public class Room {
 
     public void removeClient(ClientHandler clientHandler) {
         clients.remove(clientHandler);
+
         this.broadcast(new LeaveRoomPacket(System.currentTimeMillis(), clientHandler.getClientId(), roomId), clientHandler);
         logger.info("[{}] Client {} left the room", roomId, clientHandler.getClientId());
     }

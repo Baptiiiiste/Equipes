@@ -102,6 +102,9 @@ public class ClientHandler implements PacketHandler, Runnable {
             return;
         }
 
+        // A client can only be in one meeting at a time, even across rooms.
+        leaveMeetingsExcept(currentRoom);
+
         if (currentRoom.getClientsInMeeting().contains(this)) {
             return;
         }
@@ -121,23 +124,17 @@ public class ClientHandler implements PacketHandler, Runnable {
 
     @Override
     public void handle(LeaveMeetingPacket packet) {
-        if (currentRoom == null || !currentRoom.getRoomId().equals(packet.getRoomId())) {
-            logger.warn("[handle] LeaveMeeting ignored: client {} not in room {}", clientId, packet.getRoomId());
+        Room targetRoom = server.getRoom(packet.getRoomId());
+        if (targetRoom == null) {
+            logger.warn("[handle] LeaveMeeting ignored: room {} does not exist for client {}", packet.getRoomId(), clientId);
             return;
         }
 
-        if (!currentRoom.getClientsInMeeting().contains(this)) {
+        if (!targetRoom.getClientsInMeeting().contains(this)) {
             return;
         }
 
-        currentRoom.getClientsInMeeting().remove(this);
-        sendPacket(new LeaveMeetingPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()));
-        currentRoom.broadcast(new LeaveMeetingPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()), this);
-
-        if (currentRoom.getClientsInMeeting().isEmpty()) {
-            currentRoom.broadcast(new MeetingStopPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()), null);
-            sendPacket(new MeetingStopPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()));
-        }
+        leaveMeetingInRoom(targetRoom);
     }
 
     @Override
@@ -175,6 +172,7 @@ public class ClientHandler implements PacketHandler, Runnable {
 
     private void closeConnection() {
         running = false;
+        leaveMeetingsExcept(null);
         leaveCurrentRoom();
         try {
             if (in != null) in.close();
@@ -182,6 +180,31 @@ public class ClientHandler implements PacketHandler, Runnable {
             socket.close();
         } catch (Exception e) {
             logger.error("[closeConnection] {}", e.getMessage());
+        }
+    }
+
+    private void leaveMeetingsExcept(Room excludedRoom) {
+        for (Room room : server.getRooms().values()) {
+            if (room == excludedRoom) {
+                continue;
+            }
+            leaveMeetingInRoom(room);
+        }
+    }
+
+    private void leaveMeetingInRoom(Room room) {
+        if (room == null || !room.getClientsInMeeting().remove(this)) {
+            return;
+        }
+
+        LeaveMeetingPacket leavePacket = new LeaveMeetingPacket(System.currentTimeMillis(), clientId, room.getRoomId());
+        sendPacket(leavePacket);
+        room.broadcast(leavePacket, this);
+
+        if (room.getClientsInMeeting().isEmpty()) {
+            MeetingStopPacket stopPacket = new MeetingStopPacket(System.currentTimeMillis(), clientId, room.getRoomId());
+            room.broadcast(stopPacket, null);
+            sendPacket(stopPacket);
         }
     }
 }
