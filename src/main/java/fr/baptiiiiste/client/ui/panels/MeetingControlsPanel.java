@@ -9,10 +9,13 @@ public class MeetingControlsPanel extends JPanel {
 
     private final JLabel statusLabel;
     private final JButton primaryActionButton;
+    private final JButton shareButton;
     private final JButton leaveButton;
 
     @Setter
     private Runnable onPrimaryAction;
+    @Setter
+    private Runnable onShareAction;
     @Setter
     private Runnable onLeaveAction;
 
@@ -24,10 +27,12 @@ public class MeetingControlsPanel extends JPanel {
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.BOLD));
 
         primaryActionButton = new JButton("Lancer la reunion");
+        shareButton = new JButton("Partager");
         leaveButton = new JButton("Quitter la reunion");
 
         JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         actionsPanel.add(primaryActionButton);
+        actionsPanel.add(shareButton);
         actionsPanel.add(leaveButton);
 
         add(statusLabel, BorderLayout.WEST);
@@ -36,6 +41,12 @@ public class MeetingControlsPanel extends JPanel {
         primaryActionButton.addActionListener(e -> {
             if (onPrimaryAction != null) {
                 onPrimaryAction.run();
+            }
+        });
+
+        shareButton.addActionListener(e -> {
+            if (onShareAction != null) {
+                onShareAction.run();
             }
         });
 
@@ -52,26 +63,37 @@ public class MeetingControlsPanel extends JPanel {
         setVisible(roomSelected);
         if (!roomSelected) {
             primaryActionButton.setEnabled(false);
+            shareButton.setEnabled(false);
             leaveButton.setEnabled(false);
             primaryActionButton.setVisible(true);
+            shareButton.setVisible(false);
             leaveButton.setVisible(false);
             statusLabel.setText("Participants: 0");
         }
     }
 
-    public void updateState(boolean meetingActive, boolean currentUserInMeeting, int participantCount) {
+    public void updateState(boolean meetingActive, boolean currentUserInMeeting, int participantCount, String activeSharerId, String currentUsername) {
         int safeCount = Math.max(0, participantCount);
-        statusLabel.setText("Participants: " + safeCount);
+        String shareStatus = activeSharerId == null || activeSharerId.isBlank()
+                ? "Aucun partage"
+                : "Partage: " + activeSharerId;
+        statusLabel.setText("Participants: " + safeCount + " | " + shareStatus);
 
         if (currentUserInMeeting) {
             primaryActionButton.setVisible(false);
+            shareButton.setVisible(true);
             leaveButton.setVisible(true);
+            shareButton.setEnabled(true);
             leaveButton.setEnabled(true);
+            boolean currentUserSharing = currentUsername != null && currentUsername.equals(activeSharerId);
+            shareButton.setText(currentUserSharing ? "Arreter le partage" : "Partager");
             return;
         }
 
         primaryActionButton.setVisible(true);
+        shareButton.setVisible(false);
         leaveButton.setVisible(false);
+        shareButton.setEnabled(false);
         leaveButton.setEnabled(false);
         primaryActionButton.setEnabled(true);
         primaryActionButton.setText(meetingActive ? "Rejoindre la reunion" : "Lancer la reunion");

@@ -14,4 +14,7 @@ public interface PacketHandler {
     void handle(AudioUdpAcceptPacket packet);
     void handle(AudioStartPacket packet);
     void handle(AudioStopPacket packet);
+    void handle(ScreenShareStartPacket packet);
+    void handle(ScreenShareStopPacket packet);
+    void handle(ScreenShareFramePacket packet);
 }

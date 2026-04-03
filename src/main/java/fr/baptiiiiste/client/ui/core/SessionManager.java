@@ -3,6 +3,7 @@ package fr.baptiiiiste.client.ui.core;
 import fr.baptiiiiste.client.audio.AudioCallManager;
 import fr.baptiiiiste.client.models.Client;
 import fr.baptiiiiste.client.models.ClientRoom;
+import fr.baptiiiiste.client.screen.ScreenShareManager;
 import fr.baptiiiiste.client.ui.handlers.UIPacketHandler;
 import lombok.Getter;
 
@@ -29,6 +30,9 @@ public class SessionManager {
     @Getter
     private static AudioCallManager audioCallManager;
 
+    @Getter
+    private static ScreenShareManager screenShareManager;
+
 
     public static void initialize(String username, String host, int port) throws Exception {
         SessionManager.username = username;
@@ -43,6 +47,7 @@ public class SessionManager {
         client = new Client(host, port);
         client.connect(uiHandler);
         audioCallManager = new AudioCallManager(client, username);
+        screenShareManager = new ScreenShareManager(client, username);
     }
 
     public static void setSelectedRoom(ClientRoom room) {
@@ -52,6 +57,9 @@ public class SessionManager {
     public static void disconnect() {
         if (audioCallManager != null) {
             audioCallManager.shutdown();
+        }
+        if (screenShareManager != null) {
+            screenShareManager.shutdown();
         }
         if (client != null) {
             client.disconnect();

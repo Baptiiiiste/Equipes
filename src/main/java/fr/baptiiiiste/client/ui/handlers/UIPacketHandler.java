@@ -7,6 +7,9 @@ import fr.baptiiiiste.common.models.packets.*;
 import lombok.Setter;
 
 import javax.swing.*;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 
 @Setter
 public class UIPacketHandler implements PacketHandler {
@@ -125,6 +128,48 @@ public class UIPacketHandler implements PacketHandler {
         SwingUtilities.invokeLater(() -> {
             contentPanel.onMeetingAudioStopped(packet.getRoomId(), packet.getSenderId());
         });
+    }
+
+    @Override
+    public void handle(ScreenShareStartPacket packet) {
+        if (contentPanel == null) {
+            return;
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            contentPanel.onScreenShareStarted(packet.getRoomId(), packet.getSenderId());
+        });
+    }
+
+    @Override
+    public void handle(ScreenShareStopPacket packet) {
+        if (contentPanel == null) {
+            return;
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            contentPanel.onScreenShareStopped(packet.getRoomId(), packet.getSenderId());
+        });
+    }
+
+    @Override
+    public void handle(ScreenShareFramePacket packet) {
+        if (contentPanel == null || packet.getImageData() == null || packet.getImageData().length == 0) {
+            return;
+        }
+
+        try {
+            BufferedImage frame = ImageIO.read(new ByteArrayInputStream(packet.getImageData()));
+            if (frame == null) {
+                return;
+            }
+
+            SwingUtilities.invokeLater(() -> {
+                contentPanel.onScreenShareFrameReceived(packet.getRoomId(), packet.getSenderId(), frame);
+            });
+        } catch (Exception ignored) {
+            // Ignore malformed frame payloads.
+        }
     }
 
 }

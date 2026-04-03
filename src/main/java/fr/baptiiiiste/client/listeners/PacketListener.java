@@ -134,6 +134,31 @@ public class PacketListener implements PacketHandler, Runnable {
         }
     }
 
+    @Override
+    public void handle(ScreenShareStartPacket packet) {
+        logger.info("[{}] Screen sharing started by {}", packet.getRoomId(), packet.getSenderId());
+
+        if (uiHandler != null) {
+            uiHandler.handle(packet);
+        }
+    }
+
+    @Override
+    public void handle(ScreenShareStopPacket packet) {
+        logger.info("[{}] Screen sharing stopped by {}", packet.getRoomId(), packet.getSenderId());
+
+        if (uiHandler != null) {
+            uiHandler.handle(packet);
+        }
+    }
+
+    @Override
+    public void handle(ScreenShareFramePacket packet) {
+        if (uiHandler != null) {
+            uiHandler.handle(packet);
+        }
+    }
+
     public void stop() {
         running = false;
     }

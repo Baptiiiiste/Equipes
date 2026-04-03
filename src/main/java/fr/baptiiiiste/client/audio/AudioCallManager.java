@@ -277,24 +277,46 @@ public class AudioCallManager {
         playbackLine.start();
     }
 
-    private void closeCaptureLine() {
-        if (captureLine == null) {
+    private synchronized void closeCaptureLine() {
+        TargetDataLine lineToClose = captureLine;
+        captureLine = null;
+
+        if (lineToClose == null) {
             return;
         }
 
-        captureLine.stop();
-        captureLine.close();
-        captureLine = null;
+        try {
+            lineToClose.stop();
+        } catch (Exception ignored) {
+            // The line may already be stopped by another thread.
+        }
+
+        try {
+            lineToClose.close();
+        } catch (Exception ignored) {
+            // Best-effort close during fast room switches.
+        }
     }
 
-    private void closePlaybackLine() {
-        if (playbackLine == null) {
+    private synchronized void closePlaybackLine() {
+        SourceDataLine lineToClose = playbackLine;
+        playbackLine = null;
+
+        if (lineToClose == null) {
             return;
         }
 
-        playbackLine.stop();
-        playbackLine.close();
-        playbackLine = null;
+        try {
+            lineToClose.stop();
+        } catch (Exception ignored) {
+            // The line may already be stopped by another thread.
+        }
+
+        try {
+            lineToClose.close();
+        } catch (Exception ignored) {
+            // Best-effort close during fast room switches.
+        }
     }
 }
 

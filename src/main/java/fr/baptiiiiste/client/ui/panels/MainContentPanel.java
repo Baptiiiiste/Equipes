@@ -9,6 +9,7 @@ import lombok.Getter;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +31,8 @@ public class MainContentPanel extends JPanel {
     private final Set<String> roomsWhereCurrentUserIsInMeeting = new HashSet<>();
     private final Map<String, Set<String>> meetingParticipantsByRoom = new HashMap<>();
     private final Map<String, Set<String>> usersStreamingAudioByRoom = new HashMap<>();
+    private final Map<String, String> activeScreenSharerByRoom = new HashMap<>();
+    private final Map<String, BufferedImage> latestScreenFrameByRoom = new HashMap<>();
 
     private final CardLayout centerCardLayout;
     private final JPanel centerPanel;
@@ -39,6 +42,8 @@ public class MainContentPanel extends JPanel {
     private static final String CENTER_CHAT = "CENTER_CHAT";
     private static final String CENTER_MEETING_EMPTY = "CENTER_MEETING_EMPTY";
 
+    private final JLabel screenShareLabel;
+
     public MainContentPanel() {
         setLayout(new BorderLayout());
 
@@ -47,6 +52,7 @@ public class MainContentPanel extends JPanel {
         rightPanel = new JPanel(new BorderLayout());
         meetingControlsPanel = new MeetingControlsPanel();
         meetingControlsPanel.setOnPrimaryAction(this::handleMeetingPrimaryAction);
+        meetingControlsPanel.setOnShareAction(this::handleShareAction);
         meetingControlsPanel.setOnLeaveAction(this::handleMeetingLeaveAction);
 
         // Empty panel
@@ -59,8 +65,11 @@ public class MainContentPanel extends JPanel {
         chatCenterPanel = new JPanel(new BorderLayout());
         chatCenterPanel.add(chatPanel, BorderLayout.CENTER);
 
-        // Meeting center panel (intentionally empty for now)
+        // Meeting center panel
         meetingCenterPanel = new JPanel();
+        screenShareLabel = new JLabel("Aucun partage d'ecran en cours", SwingConstants.CENTER);
+        screenShareLabel.setHorizontalTextPosition(SwingConstants.CENTER);
+        screenShareLabel.setVerticalTextPosition(SwingConstants.BOTTOM);
 
         connectedUsersSidebarPanel = new ConnectedUsersSidebarPanel();
 
@@ -115,10 +124,15 @@ public class MainContentPanel extends JPanel {
         if (SessionManager.getAudioCallManager() != null) {
             SessionManager.getAudioCallManager().stopCall(roomId, false);
         }
+        if (SessionManager.getScreenShareManager() != null) {
+            SessionManager.getScreenShareManager().stopSharing(roomId, false);
+        }
         roomsWithActiveMeeting.remove(roomId);
         roomsWhereCurrentUserIsInMeeting.remove(roomId);
         meetingParticipantsByRoom.remove(roomId);
         usersStreamingAudioByRoom.remove(roomId);
+        activeScreenSharerByRoom.remove(roomId);
+        latestScreenFrameByRoom.remove(roomId);
         applyRoomLayoutIfSelected(roomId);
     }
 
@@ -156,6 +170,8 @@ public class MainContentPanel extends JPanel {
         if (participants.isEmpty()) {
             roomsWithActiveMeeting.remove(roomId);
             usersStreamingAudioByRoom.remove(roomId);
+            activeScreenSharerByRoom.remove(roomId);
+            latestScreenFrameByRoom.remove(roomId);
         }
 
         applyRoomLayoutIfSelected(roomId);
@@ -185,6 +201,52 @@ public class MainContentPanel extends JPanel {
         }
     }
 
+    public void onScreenShareStarted(String roomId, String sharerId) {
+        if (roomId == null || roomId.isBlank() || sharerId == null || sharerId.isBlank()) {
+            return;
+        }
+
+        activeScreenSharerByRoom.put(roomId, sharerId);
+        if (SessionManager.getScreenShareManager() != null) {
+            SessionManager.getScreenShareManager().onSharingStarted(roomId, sharerId);
+        }
+        applyRoomLayoutIfSelected(roomId);
+    }
+
+    public void onScreenShareStopped(String roomId, String sharerId) {
+        if (roomId == null || roomId.isBlank()) {
+            return;
+        }
+
+        String activeSharer = activeScreenSharerByRoom.get(roomId);
+        if (sharerId == null || sharerId.isBlank() || sharerId.equals(activeSharer)) {
+            activeScreenSharerByRoom.remove(roomId);
+            latestScreenFrameByRoom.remove(roomId);
+        }
+
+        if (SessionManager.getScreenShareManager() != null) {
+            SessionManager.getScreenShareManager().onSharingStopped(roomId, sharerId);
+        }
+
+        applyRoomLayoutIfSelected(roomId);
+    }
+
+    public void onScreenShareFrameReceived(String roomId, String sharerId, BufferedImage frame) {
+        if (roomId == null || roomId.isBlank() || sharerId == null || sharerId.isBlank() || frame == null) {
+            return;
+        }
+
+        activeScreenSharerByRoom.put(roomId, sharerId);
+        latestScreenFrameByRoom.put(roomId, frame);
+
+        ClientRoom selectedRoom = SessionManager.getSelectedRoom();
+        if (selectedRoom != null && roomId.equals(selectedRoom.getRoomId()) && roomsWhereCurrentUserIsInMeeting.contains(roomId)) {
+            renderScreenShare(frame, sharerId);
+        }
+
+        refreshMeetingControls(roomId);
+    }
+
     private void applyRoomLayoutIfSelected(String roomId) {
         ClientRoom selectedRoom = SessionManager.getSelectedRoom();
         if (selectedRoom == null || !roomId.equals(selectedRoom.getRoomId())) {
@@ -211,6 +273,8 @@ public class MainContentPanel extends JPanel {
         chatPanel.setMeetingStyle(false);
         chatCenterPanel.remove(meetingControlsPanel);
         meetingCenterPanel.removeAll();
+        screenShareLabel.setIcon(null);
+        screenShareLabel.setText("Aucun partage d'ecran en cours");
         centerCardLayout.show(centerPanel, CENTER_EMPTY);
         rightPanel.removeAll();
         rightPanel.setVisible(false);
@@ -243,13 +307,23 @@ public class MainContentPanel extends JPanel {
         JPanel screenShareContainer = new JPanel(new GridBagLayout());
         screenShareContainer.setBorder(BorderFactory.createEmptyBorder(12, 24, 24, 24));
 
-        JPanel screenSharePlaceholder = new JPanel();
-        screenSharePlaceholder.setPreferredSize(new Dimension(640, 360));
-        screenSharePlaceholder.setBorder(BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor"), 2));
-        screenSharePlaceholder.setOpaque(false);
-
-        screenShareContainer.add(screenSharePlaceholder);
+        screenShareLabel.setPreferredSize(new Dimension(960, 540));
+        screenShareLabel.setBorder(BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor"), 2));
+        screenShareLabel.setOpaque(false);
+        screenShareContainer.add(screenShareLabel);
         meetingCenterPanel.add(screenShareContainer, BorderLayout.CENTER);
+
+        String roomId = SessionManager.getSelectedRoom() != null ? SessionManager.getSelectedRoom().getRoomId() : null;
+        if (roomId != null) {
+            BufferedImage frame = latestScreenFrameByRoom.get(roomId);
+            String sharerId = activeScreenSharerByRoom.get(roomId);
+            if (frame != null && sharerId != null) {
+                renderScreenShare(frame, sharerId);
+            } else {
+                screenShareLabel.setIcon(null);
+                screenShareLabel.setText("Aucun partage d'ecran en cours");
+            }
+        }
 
         centerCardLayout.show(centerPanel, CENTER_MEETING_EMPTY);
 
@@ -267,7 +341,18 @@ public class MainContentPanel extends JPanel {
         boolean isMeetingActive = roomsWithActiveMeeting.contains(roomId);
         boolean currentUserInMeeting = roomsWhereCurrentUserIsInMeeting.contains(roomId);
         int participantCount = meetingParticipantsByRoom.getOrDefault(roomId, Collections.emptySet()).size();
-        meetingControlsPanel.updateState(isMeetingActive, currentUserInMeeting, participantCount);
+        String activeSharer = activeScreenSharerByRoom.get(roomId);
+        meetingControlsPanel.updateState(isMeetingActive, currentUserInMeeting, participantCount, activeSharer, SessionManager.getUsername());
+    }
+
+    private void renderScreenShare(BufferedImage frame, String sharerId) {
+        Dimension size = screenShareLabel.getSize();
+        int targetWidth = size.width > 0 ? size.width : 960;
+        int targetHeight = size.height > 0 ? size.height : 540;
+
+        Image scaled = frame.getScaledInstance(targetWidth, targetHeight, Image.SCALE_SMOOTH);
+        screenShareLabel.setIcon(new ImageIcon(scaled));
+        screenShareLabel.setText("Partage en cours: " + sharerId);
     }
 
     private void handleMeetingPrimaryAction() {
@@ -304,6 +389,10 @@ public class MainContentPanel extends JPanel {
             return;
         }
 
+        if (SessionManager.getScreenShareManager() != null) {
+            SessionManager.getScreenShareManager().stopSharing(roomId, true);
+        }
+
         String username = SessionManager.getUsername();
         if (username != null && !username.isBlank()) {
             onMeetingParticipantLeft(roomId, username);
@@ -318,5 +407,28 @@ public class MainContentPanel extends JPanel {
                 SessionManager.getUsername(),
                 roomId
         ));
+    }
+
+    private void handleShareAction() {
+        ClientRoom selectedRoom = SessionManager.getSelectedRoom();
+        if (selectedRoom == null || SessionManager.getScreenShareManager() == null) {
+            return;
+        }
+
+        String roomId = selectedRoom.getRoomId();
+        if (!roomsWhereCurrentUserIsInMeeting.contains(roomId)) {
+            return;
+        }
+
+        String username = SessionManager.getUsername();
+        String activeSharer = activeScreenSharerByRoom.get(roomId);
+        boolean currentUserSharing = username != null && username.equals(activeSharer);
+
+        if (currentUserSharing) {
+            SessionManager.getScreenShareManager().stopSharing(roomId, true);
+            return;
+        }
+
+        SessionManager.getScreenShareManager().requestStart(roomId);
     }
 }

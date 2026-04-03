@@ -17,7 +17,12 @@ public enum PacketType {
     AUDIO_UDP_OFFER,
     AUDIO_UDP_ACCEPT,
     AUDIO_START,
-    AUDIO_STOP
+    AUDIO_STOP,
+
+    // Screen sharing
+    SCREEN_SHARE_START,
+    SCREEN_SHARE_STOP,
+    SCREEN_SHARE_FRAME
 
 
 }

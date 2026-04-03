@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.Scanner;
 
 @Slf4j
@@ -143,6 +144,13 @@ public class Main {
 
     private static void startClient(String username, String host, int port) {
         System.out.println("\n=== Starting client ===");
+
+        if (GraphicsEnvironment.isHeadless()) {
+            logger.error("[startClient] Headless environment detected: no GUI display is available");
+            System.err.println("Client GUI cannot start in headless mode.");
+            System.err.println("On Linux, start the client from a desktop session with a graphical display.");
+            return;
+        }
 
         try {
             UIManager.setLookAndFeel(new FlatDarculaLaf());

@@ -22,6 +22,7 @@ public class Room {
     private List<ClientHandler> clients;
     private ChatRepository chatRepository;
     private List<ClientHandler> clientsInMeeting;
+    private String activeScreenSharerId;
 
     public Room(String roomId, String roomName) {
         this(roomId, roomName, null);
@@ -33,6 +34,7 @@ public class Room {
         this.clients = new ArrayList<>();
         this.clientsInMeeting = new ArrayList<>();
         this.chatRepository = chatRepository;
+        this.activeScreenSharerId = null;
     }
 
     public void broadcast(Packet packet, ClientHandler sender) {
@@ -41,6 +43,29 @@ public class Room {
                 client.sendPacket(packet);
             }
         }
+    }
+
+    public void broadcastToMeeting(Packet packet, ClientHandler sender) {
+        for (ClientHandler client : clientsInMeeting) {
+            if (client != sender) {
+                client.sendPacket(packet);
+            }
+        }
+    }
+
+    public synchronized String activateScreenSharer(String sharerId) {
+        String previousSharerId = this.activeScreenSharerId;
+        this.activeScreenSharerId = sharerId;
+        return previousSharerId;
+    }
+
+    public synchronized boolean clearScreenSharerIfMatches(String sharerId) {
+        if (activeScreenSharerId == null || !activeScreenSharerId.equals(sharerId)) {
+            return false;
+        }
+
+        activeScreenSharerId = null;
+        return true;
     }
 
     public void addClient(ClientHandler clientHandler) {
@@ -70,6 +95,7 @@ public class Room {
 
     public void removeClient(ClientHandler clientHandler) {
         clients.remove(clientHandler);
+        clientsInMeeting.remove(clientHandler);
 
         this.broadcast(new LeaveRoomPacket(System.currentTimeMillis(), clientHandler.getClientId(), roomId), clientHandler);
         logger.info("[{}] Client {} left the room", roomId, clientHandler.getClientId());

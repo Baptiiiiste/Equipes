@@ -129,6 +129,11 @@ public class ClientHandler implements PacketHandler, Runnable {
             currentRoom.broadcast(new MeetingStartPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()), null);
             sendPacket(new MeetingStartPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId()));
         }
+
+        String activeScreenSharerId = currentRoom.getActiveScreenSharerId();
+        if (activeScreenSharerId != null && !activeScreenSharerId.isBlank()) {
+            sendPacket(new ScreenShareStartPacket(System.currentTimeMillis(), activeScreenSharerId, currentRoom.getRoomId()));
+        }
     }
 
 
@@ -208,6 +213,50 @@ public class ClientHandler implements PacketHandler, Runnable {
         currentRoom.broadcast(packet, this);
     }
 
+    @Override
+    public void handle(ScreenShareStartPacket packet) {
+        if (!isClientInPacketRoom(packet.getRoomId()) || !isClientInMeeting(packet.getRoomId())) {
+            return;
+        }
+
+        String previousSharerId = currentRoom.activateScreenSharer(clientId);
+        if (previousSharerId != null && !previousSharerId.equals(clientId)) {
+            ScreenShareStopPacket stopPacket = new ScreenShareStopPacket(System.currentTimeMillis(), previousSharerId, currentRoom.getRoomId());
+            currentRoom.broadcastToMeeting(stopPacket, null);
+        }
+
+        ScreenShareStartPacket startPacket = new ScreenShareStartPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId());
+        currentRoom.broadcastToMeeting(startPacket, null);
+    }
+
+    @Override
+    public void handle(ScreenShareStopPacket packet) {
+        if (!isClientInPacketRoom(packet.getRoomId()) || !isClientInMeeting(packet.getRoomId())) {
+            return;
+        }
+
+        if (!currentRoom.clearScreenSharerIfMatches(clientId)) {
+            return;
+        }
+
+        ScreenShareStopPacket stopPacket = new ScreenShareStopPacket(System.currentTimeMillis(), clientId, currentRoom.getRoomId());
+        currentRoom.broadcastToMeeting(stopPacket, null);
+    }
+
+    @Override
+    public void handle(ScreenShareFramePacket packet) {
+        if (!isClientInPacketRoom(packet.getRoomId()) || !isClientInMeeting(packet.getRoomId())) {
+            return;
+        }
+
+        String activeSharerId = currentRoom.getActiveScreenSharerId();
+        if (!clientId.equals(activeSharerId)) {
+            return;
+        }
+
+        currentRoom.broadcastToMeeting(packet, this);
+    }
+
     public void joinRoom(Room room) {
         this.currentRoom = room;
         room.addClient(this);
@@ -254,6 +303,12 @@ public class ClientHandler implements PacketHandler, Runnable {
     private void leaveMeetingInRoom(Room room) {
         if (room == null || !room.getClientsInMeeting().remove(this)) {
             return;
+        }
+
+        if (room.clearScreenSharerIfMatches(clientId)) {
+            ScreenShareStopPacket screenShareStopPacket = new ScreenShareStopPacket(System.currentTimeMillis(), clientId, room.getRoomId());
+            room.broadcastToMeeting(screenShareStopPacket, null);
+            sendPacket(screenShareStopPacket);
         }
 
         server.getAudioSessionRegistry().removeParticipant(room.getRoomId(), clientId);

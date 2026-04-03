@@ -116,6 +116,13 @@ Then choose:
 - Audio frames are sent in real time over UDP and relayed by the server to meeting participants in the same room.
 - To change the relay port, export `APP_AUDIO_UDP_PORT` before starting the server.
 
+## Screen sharing in meetings
+
+- A new `Partager` button is available in meeting controls.
+- Only one user can share their screen at a time in a room.
+- If another participant starts sharing, the current sharer is stopped automatically and the new share takes over.
+- The active share appears in the meeting center area for participants in that room.
+
 ## Run from IntelliJ IDEA
 
 1. Open IntelliJ IDEA → `File` → `Open` → select the project `pom.xml`.
@@ -142,5 +149,3 @@ Run unit tests:
 - Java version error: install the correct JDK and set `JAVA_HOME`.
 - Main class not found: ensure `pom.xml` config for the jar plugin or run with `mvn exec:java -Dexec.mainClass="your.MainClass"`.
 - PostgreSQL connection error: confirm `docker compose ps` shows `equipes-postgres` as healthy and verify `.env` values.
-
-Save this content to `README.md`.
