@@ -6,9 +6,62 @@ Light version of Microsoft Teams for a Network course project.
 
 - JDK 11\+ installed (check with `java -version`)
 - Maven 3.6\+ installed (check with `mvn -v`)
-- macOS (instructions below)
+- macOS, Linux, or Windows
 - Docker Desktop (for local PostgreSQL)
 - (Optional) IntelliJ IDEA for development and debugging
+
+### Linux GUI prerequisites (for client)
+
+The client uses Java Swing and needs a graphical session.
+
+- Start the client from a desktop session (GNOME/KDE/etc.), not from a headless shell.
+- Ensure `DISPLAY` (X11) or `WAYLAND_DISPLAY` (Wayland) is set.
+- Use a non-headless Java runtime (avoid `openjdk-*-headless` for client machines).
+
+If these are missing, you can get errors like `HeadlessException` or `No X11 DISPLAY variable was set`.
+
+### Linux quick checks (copy/paste)
+
+```bash
+java -version
+mvn -v
+echo "DISPLAY=$DISPLAY"
+echo "WAYLAND_DISPLAY=$WAYLAND_DISPLAY"
+docker --version
+docker compose version
+```
+
+### Linux install/update commands (Ubuntu/Debian)
+
+Install Java + Maven + GUI libraries commonly needed by Swing:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y openjdk-21-jdk maven libx11-6 libxext6 libxrender1 libxtst6 libxi6 libfreetype6 libfontconfig1
+```
+
+Verify installed versions:
+
+```bash
+java -version
+mvn -v
+```
+
+If Java points to the wrong version, select the correct one:
+
+```bash
+sudo update-alternatives --config java
+sudo update-alternatives --config javac
+```
+
+Check that a graphical session is available before starting the client:
+
+```bash
+echo "$DISPLAY"
+echo "$WAYLAND_DISPLAY"
+```
+
+At least one of these two variables should be non-empty.
 
 ## Clone the repository
 
