@@ -36,7 +36,7 @@ public class LoginDialog extends JDialog {
         // Host
         gbc.gridx = 0;
         gbc.gridy = 1;
-        mainPanel.add(new JLabel("Password:"), gbc);
+        mainPanel.add(new JLabel("Host:"), gbc);
 
         hostField = new JTextField("localhost", 20);
         gbc.gridx = 1;

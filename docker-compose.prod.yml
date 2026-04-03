@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: equipes-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-equipes}
+      POSTGRES_USER: ${POSTGRES_USER:-equipes}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-equipes}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-equipes} -d ${POSTGRES_DB:-equipes}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - equipes-internal
+
+  server:
+    image: docker.isima.fr/babonneau/equipes_server:latest
+    container_name: equipes-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_SERVER_PORT: ${APP_SERVER_PORT:-8080}
+      APP_AUDIO_UDP_PORT: ${APP_AUDIO_UDP_PORT:-8081}
+      APP_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-equipes}
+      APP_DB_USER: ${POSTGRES_USER:-equipes}
+      APP_DB_PASSWORD: ${POSTGRES_PASSWORD:-equipes}
+    ports:
+      # TCP – chat/signaling
+      - "${APP_SERVER_PORT:-8080}:${APP_SERVER_PORT:-8080}"
+      # UDP – audio relay
+      - "${APP_AUDIO_UDP_PORT:-8081}:${APP_AUDIO_UDP_PORT:-8081}/udp"
+    networks:
+      - equipes-internal
+
+volumes:
+  postgres_data:
+
+networks:
+  equipes-internal:
+    driver: bridge

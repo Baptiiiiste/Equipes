@@ -1,0 +1,24 @@
+# Build artifacts
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Scripts & docs
+scripts/
+logs/
+*.md
+.env*
