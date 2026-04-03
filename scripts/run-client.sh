@@ -33,31 +33,50 @@ setup_display() {
     return 0
   fi
 
-  # Regular Linux
-  if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    # Check if DISPLAY is set
-    if [[ -z "${DISPLAY:-}" ]]; then
-      # Try to set a default
-      export DISPLAY=:0
-      echo "[INFO] DISPLAY not set, trying DISPLAY=:0"
+  # Regular Linux (including Fedora, Ubuntu, etc.)
+  if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "linux"* ]] || uname -s | grep -qi linux; then
+    echo "[INFO] Linux detected"
+    
+    # Check if running via SSH (no GUI available)
+    if [[ -n "${SSH_CONNECTION:-}" ]] || [[ -n "${SSH_CLIENT:-}" ]]; then
+      echo "[ERROR] SSH session detected - GUI applications cannot run via SSH"
+      echo "[ERROR] Run this script on your LOCAL machine, not on a remote server"
+      exit 1
     fi
     
-    # Verify X server is accessible
-    if ! command -v xdpyinfo >/dev/null 2>&1; then
-      echo "[WARN] xdpyinfo not found, cannot verify X server"
-    elif ! xdpyinfo >/dev/null 2>&1; then
-      echo "[ERROR] No X server found at DISPLAY=${DISPLAY}"
-      echo "[ERROR] Solutions:"
-      echo "  - If using SSH: run this script on your LOCAL machine, not via SSH"
-      echo "  - If on Linux desktop: make sure X11 is running"
-      echo "  - If headless: install Xvfb and run: xvfb-run ./scripts/run-client.sh"
-      exit 1
+    # Check if DISPLAY is set
+    if [[ -z "${DISPLAY:-}" ]]; then
+      # Try common defaults
+      if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
+        # Wayland session (Fedora/GNOME default)
+        export DISPLAY=:0
+        echo "[INFO] Wayland detected, setting DISPLAY=:0"
+      else
+        # X11 session
+        export DISPLAY=:0
+        echo "[INFO] DISPLAY not set, trying DISPLAY=:0"
+      fi
+    fi
+    
+    # Verify display is accessible (try without xdpyinfo if not available)
+    if command -v xdpyinfo >/dev/null 2>&1; then
+      if ! xdpyinfo >/dev/null 2>&1; then
+        echo "[ERROR] No X server found at DISPLAY=${DISPLAY}"
+        echo "[ERROR] Solutions:"
+        echo "  - Make sure you're running on a Linux desktop (not server/SSH)"
+        echo "  - If on Fedora/GNOME with Wayland: install xorg-x11-server-Xwayland"
+        echo "  - Try: export DISPLAY=:0 or export DISPLAY=:1"
+        echo "  - If headless: xvfb-run ./scripts/run-client.sh"
+        exit 1
+      fi
+    else
+      echo "[WARN] xdpyinfo not found, cannot verify X server - proceeding anyway"
     fi
     return 0
   fi
 
   # Unknown platform
-  echo "[WARN] Unknown platform: $OSTYPE"
+  echo "[WARN] Unknown platform: $OSTYPE (trying anyway)"
 }
 
 # ── Build ─────────────────────────────────────────────────────────
