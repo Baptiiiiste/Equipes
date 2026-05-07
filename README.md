@@ -1,67 +1,54 @@
 # Light Teams
 
-Light version of Microsoft Teams for a Network course project.
+Light version of Microsoft Teams for a Network course project. **macOS only.**
 
-## Prerequisites
+## Features
 
-- JDK 11\+ installed (check with `java -version`)
-- Maven 3.6\+ installed (check with `mvn -v`)
-- macOS, Linux, or Windows
-- Docker Desktop (for local PostgreSQL)
-- (Optional) IntelliJ IDEA for development and debugging
+- **Team Management**: Create and manage team rooms
+- **Real-time Chat**: Send and receive messages instantly within rooms
+- **Live Audio Calls**: Crystal-clear audio conversations with multiple participants using UDP streaming
+- **Screen Sharing**: Share your screen with team members in meetings (only one active share per room)
+- **User Interface**: Intuitive Swing-based GUI for seamless collaboration
+- **Persistent Storage**: PostgreSQL database for chat history and room management
 
-### Linux GUI prerequisites (for client)
+## Prerequisites (macOS)
 
-The client uses Java Swing and needs a graphical session.
+- **macOS**
+- **JDK 21+** (check with `java -version`)
+- **Maven 3.9+** (check with `mvn -v`)
+- **Docker Desktop** (for PostgreSQL database)
+- _(Optional) IntelliJ IDEA for development and debugging_
 
-- Start the client from a desktop session (GNOME/KDE/etc.), not from a headless shell.
-- Ensure `DISPLAY` (X11) or `WAYLAND_DISPLAY` (Wayland) is set.
-- Use a non-headless Java runtime (avoid `openjdk-*-headless` for client machines).
-
-If these are missing, you can get errors like `HeadlessException` or `No X11 DISPLAY variable was set`.
-
-### Linux quick checks (copy/paste)
+### Quick verification (copy/paste)
 
 ```bash
 java -version
 mvn -v
-echo "DISPLAY=$DISPLAY"
-echo "WAYLAND_DISPLAY=$WAYLAND_DISPLAY"
 docker --version
 docker compose version
 ```
 
-### Linux install/update commands (Ubuntu/Debian)
+All commands should return version info without errors.
 
-Install Java + Maven + GUI libraries commonly needed by Swing:
+### Installation (via Homebrew)
 
-```bash
-sudo apt-get update
-sudo apt-get install -y openjdk-21-jdk maven libx11-6 libxext6 libxrender1 libxtst6 libxi6 libfreetype6 libfontconfig1
-```
-
-Verify installed versions:
+If you don't have Java or Maven:
 
 ```bash
+# Install Java
+brew install openjdk@21
+# Link it to your PATH if needed
+sudo ln -sfn /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-21.jdk
+
+# Install Maven
+brew install maven
+
+# Verify installation
 java -version
 mvn -v
 ```
 
-If Java points to the wrong version, select the correct one:
-
-```bash
-sudo update-alternatives --config java
-sudo update-alternatives --config javac
-```
-
-Check that a graphical session is available before starting the client:
-
-```bash
-echo "$DISPLAY"
-echo "$WAYLAND_DISPLAY"
-```
-
-At least one of these two variables should be non-empty.
+Install **Docker Desktop** from [docker.com](https://www.docker.com/products/docker-desktop).
 
 ## Clone the repository
 
@@ -78,72 +65,59 @@ Build and create an executable JAR (skip tests if desired):
 
 The artifact is typically in `target/` as `artifactId-version.jar`. Replace with the actual name from your `pom.xml`.
 
-## Start PostgreSQL with Docker
-
-1. Copy the env template:
-
-       cp .env.example .env
-
-2. Start PostgreSQL:
-
-       docker compose up -d postgres
-
-The server reads these variables from your shell when it starts:
-
-- `APP_DB_URL` (default: `jdbc:postgresql://localhost:5432/equipes`)
-- `APP_DB_USER` (default: `equipes`)
-- `APP_DB_PASSWORD` (default: `equipes`)
-- `APP_SERVER_PORT` (default: `8080`)
-- `APP_AUDIO_UDP_PORT` (default: `APP_SERVER_PORT + 1`, so `8081`)
-
-If these variables are not exported, defaults are used.
-
 ## Run the application
 
-Launch from Maven:
+### 1. Start PostgreSQL
 
-    mvn exec:java
+```bash
+docker compose up -d postgres
+```
 
-Then choose:
+Verify the database is running:
 
-- `1` to start server (Flyway migration runs automatically and rooms are loaded from PostgreSQL)
-- `2` to start client
+```bash
+docker compose ps
+```
 
-## Live audio over UDP
+You should see `equipes-postgres` with status `healthy`.
 
-- Audio conversations run inside meetings.
-- Signaling (join/leave/start/stop audio) uses the existing TCP packet layer.
-- Audio frames are sent in real time over UDP and relayed by the server to meeting participants in the same room.
-- To change the relay port, export `APP_AUDIO_UDP_PORT` before starting the server.
+### 2. Build the project
 
-## Screen sharing in meetings
+```bash
+mvn clean package -DskipTests
+```
 
-- A new `Partager` button is available in meeting controls.
-- Only one user can share their screen at a time in a room.
-- If another participant starts sharing, the current sharer is stopped automatically and the new share takes over.
-- The active share appears in the meeting center area for participants in that room.
+### 3. Start the server and client
 
-## Run from IntelliJ IDEA
+```bash
+mvn exec:java
+```
 
-1. Open IntelliJ IDEA → `File` → `Open` → select the project `pom.xml`.
-2. Wait for Maven import to finish.
-3. Create a Run configuration of type `Application`:
-    - `Main class`: the class with `public static void main(String[] args)`
-    - `Use classpath of module`: select the main module
-4. Run or debug the configuration.
+You'll be prompted:
 
-## Tests
+- **Option 1**: Start the server (handles database migrations and room management)
+- **Option 2**: Start the client (GUI application)
 
-Run unit tests:
+Run the **server first** in one terminal, then **client(s)** in other terminal(s).
 
-    mvn test
+### Environment variables (optional)
 
-## Project layout
+The server reads these from your shell (defaults work for local development):
 
-- `src/main/java` : application source code
-- `src/test/java` : tests
-- `pom.xml` : Maven configuration
+```bash
+APP_DB_URL=jdbc:postgresql://localhost:5432/equipes
+APP_DB_USER=equipes
+APP_DB_PASSWORD=equipes
+APP_SERVER_PORT=8080
+APP_AUDIO_UDP_PORT=8081
+```
 
+To override, export them before running:
+
+```bash
+export APP_SERVER_PORT=9090
+mvn exec:java
+```
 ## Troubleshooting
 
 - Java version error: install the correct JDK and set `JAVA_HOME`.
